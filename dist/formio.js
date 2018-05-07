@@ -1,4 +1,4 @@
-/*! ng-formio v2.32.0 | https://unpkg.com/ng-formio@2.32.0/LICENSE.txt */
+/*! ng-formio v2.33.0 | https://unpkg.com/ng-formio@2.33.0/LICENSE.txt */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.formio = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 exports.defaults = {};
 
@@ -7838,8 +7838,8 @@ return /******/ (function(modules) { // webpackBootstrap
 }();
 
 }).call(this,_dereq_('_process'))
-},{"_process":265}],5:[function(_dereq_,module,exports){
-/* flatpickr v4.4.3, @license MIT */
+},{"_process":264}],5:[function(_dereq_,module,exports){
+/* flatpickr v4.4.6, @license MIT */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -8190,7 +8190,9 @@ return /******/ (function(modules) { // webpackBootstrap
       enable: [],
       enableSeconds: false,
       enableTime: false,
-      errorHandler: console.warn,
+      errorHandler: function errorHandler(err) {
+        return typeof console !== "undefined" && console.warn(err);
+      },
       getWeek: getWeek,
       hourIncrement: 1,
       ignoredFocusElements: [],
@@ -8272,7 +8274,9 @@ return /******/ (function(modules) { // webpackBootstrap
           args[_key - 1] = arguments[_key];
         }
 
-        var _loop = function _loop(source) {
+        var _loop = function _loop() {
+          var source = args[_i];
+
           if (source) {
             Object.keys(source).forEach(function (key) {
               return target[key] = source[key];
@@ -8281,13 +8285,25 @@ return /******/ (function(modules) { // webpackBootstrap
         };
 
         for (var _i = 0; _i < args.length; _i++) {
-          var source = args[_i];
-
-          _loop(source);
+          _loop();
         }
 
         return target;
       };
+    }
+
+    if (typeof window.requestAnimationFrame !== "function") {
+      var vendors = ["ms", "moz", "webkit", "o"];
+
+      for (var x = 0, length = vendors.length; x < length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x] + "RequestAnimationFrame"];
+      }
+
+      if (typeof window.requestAnimationFrame !== "function") {
+        window.requestAnimationFrame = function (cb) {
+          return setTimeout(cb, 16);
+        };
+      }
     }
 
     var DEBOUNCED_CHANGE_MS = 300;
@@ -8354,23 +8370,8 @@ return /******/ (function(modules) { // webpackBootstrap
           updateValue(false);
         }
 
+        setCalendarWidth();
         self.showTimeInput = self.selectedDates.length > 0 || self.config.noCalendar;
-
-        if (self.daysContainer !== undefined) {
-          self.calendarContainer.style.visibility = "hidden";
-          self.calendarContainer.style.display = "block";
-          var daysWidth = (self.daysContainer.offsetWidth + 1) * self.config.showMonths;
-          self.daysContainer.style.width = daysWidth + "px";
-          self.calendarContainer.style.width = daysWidth + "px";
-
-          if (self.weekWrapper !== undefined) {
-            self.calendarContainer.style.width = daysWidth + self.weekWrapper.offsetWidth + "px";
-          }
-
-          self.calendarContainer.style.visibility = "visible";
-          self.calendarContainer.style.display = null;
-        }
-
         var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
         if (!self.isMobile && isSafari) {
@@ -8382,6 +8383,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
       function bindToInstance(fn) {
         return fn.bind(self);
+      }
+
+      function setCalendarWidth() {
+        var config = self.config;
+        if (config.weekNumbers === false && config.showMonths === 1) return;else if (config.noCalendar !== true) {
+          window.requestAnimationFrame(function () {
+            self.calendarContainer.style.visibility = "hidden";
+            self.calendarContainer.style.display = "block";
+
+            if (self.daysContainer !== undefined) {
+              var daysWidth = (self.days.offsetWidth + 1) * config.showMonths;
+              self.daysContainer.style.width = daysWidth + "px";
+              self.calendarContainer.style.width = daysWidth + (self.weekWrapper !== undefined ? self.weekWrapper.offsetWidth : 0) + "px";
+              self.calendarContainer.style.removeProperty("visibility");
+              self.calendarContainer.style.removeProperty("display");
+            }
+          });
+        }
       }
 
       function updateTime(e) {
@@ -8460,9 +8479,8 @@ return /******/ (function(modules) { // webpackBootstrap
       function onYearInput(event) {
         var year = parseInt(event.target.value) + (event.delta || 0);
 
-        if (year.toString().length === 4 || event.key === "Enter") {
-          event.target.blur();
-          if (!/[^\d]/.test(year.toString())) changeYear(year);
+        if (year / 1000 > 1 || event.key === "Enter" && !/[^\d]/.test(year.toString())) {
+          changeYear(year);
         }
       }
 
@@ -8478,7 +8496,8 @@ return /******/ (function(modules) { // webpackBootstrap
         self._handlers.push({
           element: element,
           event: event,
-          handler: handler
+          handler: handler,
+          options: options
         });
       }
 
@@ -8514,8 +8533,7 @@ return /******/ (function(modules) { // webpackBootstrap
         bind(window.document.body, "keydown", onKeyDown);
         if (!self.config.static) bind(self._input, "keydown", onKeyDown);
         if (!self.config.inline && !self.config.static) bind(window, "resize", debouncedResize);
-        if (window.ontouchstart !== undefined) bind(window.document, "touchstart", documentClick);
-        bind(window.document, "mousedown", onClick(documentClick));
+        if (window.ontouchstart !== undefined) bind(window.document, "click", documentClick);else bind(window.document, "mousedown", onClick(documentClick));
         bind(window.document, "focus", documentClick, {
           capture: true
         });
@@ -8652,9 +8670,10 @@ return /******/ (function(modules) { // webpackBootstrap
         dayElement.$i = i;
         dayElement.setAttribute("aria-label", self.formatDate(date, self.config.ariaDateFormat));
 
-        if (compareDates(date, self.now) === 0) {
+        if (className.indexOf("hidden") === -1 && compareDates(date, self.now) === 0) {
           self.todayDateElem = dayElement;
           dayElement.classList.add("today");
+          dayElement.setAttribute("aria-current", "date");
         }
 
         if (dateIsEnabled) {
@@ -8686,29 +8705,71 @@ return /******/ (function(modules) { // webpackBootstrap
         return dayElement;
       }
 
-      function focusOnDay(currentInd, offset) {
-        var currentIndex = currentInd !== undefined ? currentInd : document.activeElement.$i;
-        var newIndex = (currentIndex || 0) + offset || 0,
-            targetNode = Array.prototype.find.call(self.days.children, function (c, i) {
-          return i >= newIndex && c.className.indexOf("MonthDay") === -1 && isEnabled(c.dateObj);
-        });
+      function focusOnDayElem(targetNode) {
+        targetNode.focus();
+        if (self.config.mode === "range") onMouseOver(targetNode);
+      }
 
-        if (targetNode !== undefined) {
-          targetNode.focus();
-          if (self.config.mode === "range") onMouseOver(targetNode);
+      function getFirstAvailableDay(delta) {
+        var startMonth = delta > 0 ? 0 : self.config.showMonths - 1;
+        var endMonth = delta > 0 ? self.config.showMonths : -1;
+
+        for (var m = startMonth; m != endMonth; m += delta) {
+          var month = self.daysContainer.children[m];
+          var startIndex = delta > 0 ? 0 : month.children.length - 1;
+          var endIndex = delta > 0 ? month.children.length : -1;
+
+          for (var i = startIndex; i != endIndex; i += delta) {
+            var c = month.children[i];
+            if (c.className.indexOf("hidden") === -1 && isEnabled(c.dateObj)) return c;
+          }
         }
+
+        return undefined;
+      }
+
+      function getNextAvailableDay(current, delta) {
+        var givenMonth = current.className.indexOf("Month") === -1 ? current.dateObj.getMonth() : self.currentMonth;
+        var endMonth = delta > 0 ? self.config.showMonths : -1;
+        var loopDelta = delta > 0 ? 1 : -1;
+
+        for (var m = givenMonth - self.currentMonth; m != endMonth; m += loopDelta) {
+          var month = self.daysContainer.children[m];
+          var startIndex = givenMonth - self.currentMonth === m ? current.$i + delta : delta < 0 ? month.children.length - 1 : 0;
+          var numMonthDays = month.children.length;
+
+          for (var i = startIndex; i >= 0 && i < numMonthDays && i != (delta > 0 ? numMonthDays : -1); i += loopDelta) {
+            var c = month.children[i];
+            if (c.className.indexOf("hidden") === -1 && isEnabled(c.dateObj) && Math.abs(current.$i - i) >= Math.abs(delta)) return focusOnDayElem(c);
+          }
+        }
+
+        self.changeMonth(loopDelta);
+        focusOnDay(getFirstAvailableDay(loopDelta), 0);
+        return undefined;
+      }
+
+      function focusOnDay(current, offset) {
+        var dayFocused = isInView(document.activeElement);
+        var startElem = current !== undefined ? current : dayFocused ? document.activeElement : self.selectedDateElem !== undefined && isInView(self.selectedDateElem) ? self.selectedDateElem : self.todayDateElem !== undefined && isInView(self.todayDateElem) ? self.todayDateElem : getFirstAvailableDay(offset > 0 ? 1 : -1);
+        if (startElem === undefined) return self._input.focus();
+        if (!dayFocused) return focusOnDayElem(startElem);
+        getNextAvailableDay(startElem, offset);
       }
 
       function buildMonthDays(year, month) {
         var firstOfMonth = (new Date(year, month, 1).getDay() - self.l10n.firstDayOfWeek + 7) % 7;
         var prevMonthDays = self.utils.getDaysInMonth((month - 1 + 12) % 12);
         var daysInMonth = self.utils.getDaysInMonth(month),
-            days = window.document.createDocumentFragment();
+            days = window.document.createDocumentFragment(),
+            isMultiMonth = self.config.showMonths > 1,
+            prevMonthDayClass = isMultiMonth ? "prevMonthDay hidden" : "prevMonthDay",
+            nextMonthDayClass = isMultiMonth ? "nextMonthDay hidden" : "nextMonthDay";
         var dayNumber = prevMonthDays + 1 - firstOfMonth,
             dayIndex = 0;
 
         for (; dayNumber <= prevMonthDays; dayNumber++, dayIndex++) {
-          days.appendChild(createDay("prevMonthDay", new Date(year, month - 1, dayNumber), dayNumber, dayIndex));
+          days.appendChild(createDay(prevMonthDayClass, new Date(year, month - 1, dayNumber), dayNumber, dayIndex));
         }
 
         for (dayNumber = 1; dayNumber <= daysInMonth; dayNumber++, dayIndex++) {
@@ -8716,7 +8777,7 @@ return /******/ (function(modules) { // webpackBootstrap
         }
 
         for (var dayNum = daysInMonth + 1; dayNum <= 42 - firstOfMonth && (self.config.showMonths === 1 || dayIndex % 7 !== 0); dayNum++, dayIndex++) {
-          days.appendChild(createDay("nextMonthDay", new Date(year, month + 1, dayNum % daysInMonth), dayNum, dayIndex));
+          days.appendChild(createDay(nextMonthDayClass, new Date(year, month + 1, dayNum % daysInMonth), dayNum, dayIndex));
         }
 
         var dayContainer = createElement("div", "dayContainer");
@@ -8773,14 +8834,8 @@ return /******/ (function(modules) { // webpackBootstrap
         };
       }
 
-      function buildMonthNav() {
-        self.monthNav = createElement("div", "flatpickr-months");
-        self.yearElements = [];
-        self.monthElements = [];
-        self.prevMonthNav = createElement("span", "flatpickr-prev-month");
-        self.prevMonthNav.innerHTML = self.config.prevArrow;
-        self.nextMonthNav = createElement("span", "flatpickr-next-month");
-        self.nextMonthNav.innerHTML = self.config.nextArrow;
+      function buildMonths() {
+        clearNode(self.monthNav);
         self.monthNav.appendChild(self.prevMonthNav);
 
         for (var m = self.config.showMonths; m--;) {
@@ -8791,6 +8846,17 @@ return /******/ (function(modules) { // webpackBootstrap
         }
 
         self.monthNav.appendChild(self.nextMonthNav);
+      }
+
+      function buildMonthNav() {
+        self.monthNav = createElement("div", "flatpickr-months");
+        self.yearElements = [];
+        self.monthElements = [];
+        self.prevMonthNav = createElement("span", "flatpickr-prev-month");
+        self.prevMonthNav.innerHTML = self.config.prevArrow;
+        self.nextMonthNav = createElement("span", "flatpickr-next-month");
+        self.nextMonthNav.innerHTML = self.config.nextArrow;
+        buildMonths();
         Object.defineProperty(self, "_hidePrevMonthArrow", {
           get: function get() {
             return self.__hidePrevMonthArrow;
@@ -8865,7 +8931,7 @@ return /******/ (function(modules) { // webpackBootstrap
       }
 
       function buildWeekdays() {
-        if (!self.weekdayContainer) self.weekdayContainer = createElement("div", "flatpickr-weekdays");
+        if (!self.weekdayContainer) self.weekdayContainer = createElement("div", "flatpickr-weekdays");else clearNode(self.weekdayContainer);
 
         for (var i = self.config.showMonths; i--;) {
           var container = createElement("div", "flatpickr-weekdaycontainer");
@@ -8901,13 +8967,9 @@ return /******/ (function(modules) { // webpackBootstrap
         };
       }
 
-      function changeMonth(value, is_offset, from_keyboard) {
+      function changeMonth(value, is_offset) {
         if (is_offset === void 0) {
           is_offset = true;
-        }
-
-        if (from_keyboard === void 0) {
-          from_keyboard = false;
         }
 
         var delta = is_offset ? value : value - self.currentMonth;
@@ -8923,10 +8985,6 @@ return /******/ (function(modules) { // webpackBootstrap
         buildDays();
         triggerEvent("onMonthChange");
         updateNavigationCurrentMonth();
-
-        if (from_keyboard === true) {
-          focusOnDay(undefined, 0);
-        }
       }
 
       function clear(triggerChangeEvent) {
@@ -8966,7 +9024,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
         for (var i = self._handlers.length; i--;) {
           var h = self._handlers[i];
-          h.element.removeEventListener(h.event, h.handler);
+          h.element.removeEventListener(h.event, h.handler, h.options);
         }
 
         self._handlers = [];
@@ -9062,6 +9120,11 @@ return /******/ (function(modules) { // webpackBootstrap
         return !bool;
       }
 
+      function isInView(elem) {
+        if (self.daysContainer !== undefined) return elem.className.indexOf("hidden") === -1 && self.daysContainer.contains(elem);
+        return false;
+      }
+
       function onKeyDown(e) {
         var isInput = e.target === self._input;
         var calendarElem = isCalendarElem(e.target);
@@ -9101,10 +9164,13 @@ return /******/ (function(modules) { // webpackBootstrap
               if (!isTimeObj) {
                 e.preventDefault();
 
-                if (self.daysContainer) {
-                  var _delta = isInput ? 0 : e.keyCode === 39 ? 1 : -1;
+                if (self.daysContainer !== undefined && (allowInput === false || isInView(document.activeElement))) {
+                  var _delta = e.keyCode === 39 ? 1 : -1;
 
-                  if (!e.ctrlKey) focusOnDay(undefined, _delta);else changeMonth(_delta, true, true);
+                  if (!e.ctrlKey) focusOnDay(undefined, _delta);else {
+                    changeMonth(_delta);
+                    focusOnDay(getFirstAvailableDay(1), 0);
+                  }
                 }
               } else if (self.hourElement) self.hourElement.focus();
 
@@ -9115,11 +9181,11 @@ return /******/ (function(modules) { // webpackBootstrap
               e.preventDefault();
               var delta = e.keyCode === 40 ? 1 : -1;
 
-              if (self.daysContainer && e.target.$i !== undefined) {
+              if (self.daysContainer) {
                 if (e.ctrlKey) {
                   changeYear(self.currentYear - delta);
-                  focusOnDay(e.target.$i, 0);
-                } else if (!isTimeObj) focusOnDay(e.target.$i, delta * 7);
+                  focusOnDay(getFirstAvailableDay(1), 0);
+                } else if (!isTimeObj) focusOnDay(undefined, delta * 7);
               } else if (self.config.enableTime) {
                 if (!isTimeObj && self.hourElement) self.hourElement.focus();
                 updateTime(e);
@@ -9130,12 +9196,17 @@ return /******/ (function(modules) { // webpackBootstrap
               break;
 
             case 9:
+              if (!isTimeObj) break;
+
               if (e.target === self.hourElement) {
                 e.preventDefault();
                 self.minuteElement.select();
               } else if (e.target === self.minuteElement && (self.secondElement || self.amPM)) {
                 e.preventDefault();
-                if (self.secondElement !== undefined) self.secondElement.focus();else if (self.amPM !== undefined) self.amPM.focus();
+                if (self.secondElement !== undefined) self.secondElement.focus();else if (self.amPM !== undefined) {
+                  e.preventDefault();
+                  self.amPM.focus();
+                }
               } else if (e.target === self.secondElement && self.amPM) {
                 e.preventDefault();
                 self.amPM.focus();
@@ -9146,34 +9217,27 @@ return /******/ (function(modules) { // webpackBootstrap
             default:
               break;
           }
+        }
 
+        if (self.amPM !== undefined && e.target === self.amPM) {
           switch (e.key) {
             case self.l10n.amPM[0].charAt(0):
             case self.l10n.amPM[0].charAt(0).toLowerCase():
-              if (self.amPM !== undefined && e.target === self.amPM) {
-                self.amPM.textContent = self.l10n.amPM[0];
-                setHoursFromInputs();
-                updateValue();
-              }
-
+              self.amPM.textContent = self.l10n.amPM[0];
+              setHoursFromInputs();
+              updateValue();
               break;
 
             case self.l10n.amPM[1].charAt(0):
             case self.l10n.amPM[1].charAt(0).toLowerCase():
-              if (self.amPM !== undefined && e.target === self.amPM) {
-                self.amPM.textContent = self.l10n.amPM[1];
-                setHoursFromInputs();
-                updateValue();
-              }
-
-              break;
-
-            default:
+              self.amPM.textContent = self.l10n.amPM[1];
+              setHoursFromInputs();
+              updateValue();
               break;
           }
-
-          triggerEvent("onKeyDown", e);
         }
+
+        triggerEvent("onKeyDown", e);
       }
 
       function onMouseOver(elem) {
@@ -9182,14 +9246,11 @@ return /******/ (function(modules) { // webpackBootstrap
             initialDate = self.parseDate(self.selectedDates[0], undefined, true).getTime(),
             rangeStartDate = Math.min(hoverDate, self.selectedDates[0].getTime()),
             rangeEndDate = Math.max(hoverDate, self.selectedDates[0].getTime());
-        var months = self.daysContainer.children,
-            firstDay = months[0].children[0].dateObj.getTime(),
-            lastDay = months[months.length - 1].lastChild.dateObj.getTime();
         var containsDisabled = false;
         var minRange = 0,
             maxRange = 0;
 
-        for (var t = firstDay; t < lastDay; t += duration.DAY) {
+        for (var t = rangeStartDate; t < rangeEndDate; t += duration.DAY) {
           if (!isEnabled(new Date(t), true)) {
             containsDisabled = containsDisabled || t > rangeStartDate && t < rangeEndDate;
             if (t < initialDate && (!minRange || t > minRange)) minRange = t;else if (t > initialDate && (!maxRange || t < maxRange)) maxRange = t;
@@ -9249,7 +9310,7 @@ return /******/ (function(modules) { // webpackBootstrap
           }
 
           setTimeout(function () {
-            self.mobileInput !== undefined && self.mobileInput.click();
+            self.mobileInput !== undefined && self.mobileInput.focus();
           }, 0);
           triggerEvent("onOpen");
           return;
@@ -9275,9 +9336,11 @@ return /******/ (function(modules) { // webpackBootstrap
             updateValue();
           }
 
-          setTimeout(function () {
-            return self.hourElement.select();
-          }, 50);
+          if (self.config.allowInput === false && (e === undefined || !self.timeContainer.contains(e.relatedTarget))) {
+            setTimeout(function () {
+              return self.hourElement.select();
+            }, 50);
+          }
         }
       }
 
@@ -9329,13 +9392,14 @@ return /******/ (function(modules) { // webpackBootstrap
             self.config._disable = parseDateRules(dates);
           }
         });
+        var timeMode = userConfig.mode === "time";
 
-        if (!userConfig.dateFormat && userConfig.enableTime) {
-          formats$$1.dateFormat = userConfig.noCalendar ? "H:i" + (userConfig.enableSeconds ? ":S" : "") : flatpickr.defaultConfig.dateFormat + " H:i" + (userConfig.enableSeconds ? ":S" : "");
+        if (!userConfig.dateFormat && (userConfig.enableTime || timeMode)) {
+          formats$$1.dateFormat = userConfig.noCalendar || timeMode ? "H:i" + (userConfig.enableSeconds ? ":S" : "") : flatpickr.defaultConfig.dateFormat + " H:i" + (userConfig.enableSeconds ? ":S" : "");
         }
 
-        if (userConfig.altInput && userConfig.enableTime && !userConfig.altFormat) {
-          formats$$1.altFormat = userConfig.noCalendar ? "h:i" + (userConfig.enableSeconds ? ":S K" : " K") : flatpickr.defaultConfig.altFormat + (" h:i" + (userConfig.enableSeconds ? ":S" : "") + " K");
+        if (userConfig.altInput && (userConfig.enableTime || timeMode) && !userConfig.altFormat) {
+          formats$$1.altFormat = userConfig.noCalendar || timeMode ? "h:i" + (userConfig.enableSeconds ? ":S K" : " K") : flatpickr.defaultConfig.altFormat + (" h:i" + (userConfig.enableSeconds ? ":S" : "") + " K");
         }
 
         Object.defineProperty(self.config, "minDate", {
@@ -9369,6 +9433,12 @@ return /******/ (function(modules) { // webpackBootstrap
           },
           set: minMaxTimeSetter("max")
         });
+
+        if (userConfig.mode === "time") {
+          self.config.noCalendar = true;
+          self.config.enableTime = true;
+        }
+
         Object.assign(self.config, formats$$1, userConfig);
 
         for (var i = 0; i < boolOpts.length; i++) {
@@ -9381,10 +9451,7 @@ return /******/ (function(modules) { // webpackBootstrap
           }
         }
 
-        if (self.config.mode === "time") {
-          self.config.noCalendar = true;
-          self.config.enableTime = true;
-        }
+        self.isMobile = !self.config.disableMobile && !self.config.inline && self.config.mode === "single" && !self.config.disable.length && !self.config.enable.length && !self.config.weekNumbers && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         for (var _i2 = 0; _i2 < self.config.plugins.length; _i2++) {
           var pluginConf = self.config.plugins[_i2](self) || {};
@@ -9396,7 +9463,6 @@ return /******/ (function(modules) { // webpackBootstrap
           }
         }
 
-        self.isMobile = !self.config.disableMobile && !self.config.inline && self.config.mode === "single" && !self.config.disable.length && !self.config.enable.length && !self.config.weekNumbers && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         triggerEvent("onParseConfig");
       }
 
@@ -9415,15 +9481,17 @@ return /******/ (function(modules) { // webpackBootstrap
           return acc + child.offsetHeight;
         }, 0),
             calendarWidth = self.calendarContainer.offsetWidth,
-            configPos = self.config.position,
+            configPos = self.config.position.split(" "),
+            configPosVertical = configPos[0],
+            configPosHorizontal = configPos.length > 1 ? configPos[1] : null,
             inputBounds = positionElement.getBoundingClientRect(),
             distanceFromBottom = window.innerHeight - inputBounds.bottom,
-            showOnTop = configPos === "above" || configPos !== "below" && distanceFromBottom < calendarHeight && inputBounds.top > calendarHeight;
+            showOnTop = configPosVertical === "above" || configPosVertical !== "below" && distanceFromBottom < calendarHeight && inputBounds.top > calendarHeight;
         var top = window.pageYOffset + inputBounds.top + (!showOnTop ? positionElement.offsetHeight + 2 : -calendarHeight - 2);
         toggleClass(self.calendarContainer, "arrowTop", !showOnTop);
         toggleClass(self.calendarContainer, "arrowBottom", showOnTop);
         if (self.config.inline) return;
-        var left = window.pageXOffset + inputBounds.left;
+        var left = window.pageXOffset + inputBounds.left - (configPosHorizontal != null && configPosHorizontal === "center" ? (calendarWidth - inputBounds.width) / 2 : 0);
         var right = window.document.body.offsetWidth - inputBounds.right;
         var rightMost = left + calendarWidth > window.document.body.offsetWidth;
         toggleClass(self.calendarContainer, "rightMost", rightMost);
@@ -9441,7 +9509,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
       function redraw() {
         if (self.config.noCalendar || self.isMobile) return;
-        updateWeekdays();
         updateNavigationCurrentMonth();
         buildDays();
       }
@@ -9504,7 +9571,7 @@ return /******/ (function(modules) { // webpackBootstrap
           } else updateNavigationCurrentMonth();
         }
 
-        if (!shouldChangeMonth && self.config.mode !== "range" && self.config.showMonths === 1) focusOnDay(target.$i, 0);else self.selectedDateElem && self.selectedDateElem.focus();
+        if (!shouldChangeMonth && self.config.mode !== "range" && self.config.showMonths === 1) focusOnDayElem(target);else self.selectedDateElem && self.selectedDateElem.focus();
         if (self.hourElement !== undefined) setTimeout(function () {
           return self.hourElement !== undefined && self.hourElement.select();
         }, 451);
@@ -9522,7 +9589,8 @@ return /******/ (function(modules) { // webpackBootstrap
       }
 
       var CALLBACKS = {
-        locale: [setupLocale]
+        locale: [setupLocale, updateWeekdays],
+        showMonths: [buildMonths, setCalendarWidth, buildWeekdays]
       };
 
       function set(option, value) {
@@ -9543,6 +9611,7 @@ return /******/ (function(modules) { // webpackBootstrap
         });else if (inputDate instanceof Date || typeof inputDate === "number") dates = [self.parseDate(inputDate, format)];else if (typeof inputDate === "string") {
           switch (self.config.mode) {
             case "single":
+            case "time":
               dates = [self.parseDate(inputDate, format)];
               break;
 
@@ -9591,7 +9660,7 @@ return /******/ (function(modules) { // webpackBootstrap
       }
 
       function parseDateRules(arr) {
-        return arr.map(function (rule) {
+        return arr.slice().map(function (rule) {
           if (typeof rule === "string" || typeof rule === "number" || rule instanceof Date) {
             return self.parseDate(rule, undefined, true);
           } else if (rule && typeof rule === "object" && rule.from && rule.to) return {
@@ -9690,9 +9759,9 @@ return /******/ (function(modules) { // webpackBootstrap
         });
       }
 
-      function toggle() {
-        if (self.isOpen) return self.close();
-        self.open();
+      function toggle(e) {
+        if (self.isOpen === true) return self.close();
+        self.open(e);
       }
 
       function triggerEvent(event, data) {
@@ -9767,13 +9836,13 @@ return /******/ (function(modules) { // webpackBootstrap
       }
 
       function onMonthNavClick(e) {
+        e.preventDefault();
         var isPrevMonth = self.prevMonthNav.contains(e.target);
         var isNextMonth = self.nextMonthNav.contains(e.target);
 
         if (isPrevMonth || isNextMonth) {
           changeMonth(isPrevMonth ? -1 : 1);
         } else if (self.yearElements.indexOf(e.target) >= 0) {
-          e.preventDefault();
           e.target.select();
         } else if (e.target.classList.contains("arrowUp")) {
           self.changeYear(self.currentYear + 1);
@@ -9890,6 +9959,10 @@ return /******/ (function(modules) { // webpackBootstrap
     Date.prototype.fp_incr = function (days) {
       return new Date(this.getFullYear(), this.getMonth(), this.getDate() + (typeof days === "string" ? parseInt(days, 10) : days));
     };
+
+    if (typeof window !== "undefined") {
+      window.flatpickr = flatpickr;
+    }
 
     return flatpickr;
 
@@ -10090,6 +10163,8 @@ var FormioComponents = exports.FormioComponents = function (_BaseComponent) {
   }, {
     key: 'createComponent',
     value: function createComponent(component, options, data) {
+      options = options || this.options;
+      data = data || this.data;
       if (!this.options.components) {
         this.options.components = _dereq_('./index');
         _lodash2.default.assign(this.options.components, FormioComponents.customComponents);
@@ -10370,6 +10445,7 @@ var FormioComponents = exports.FormioComponents = function (_BaseComponent) {
       var _this5 = this;
 
       _get(FormioComponents.prototype.__proto__ || Object.getPrototypeOf(FormioComponents.prototype), 'destroy', this).call(this, all);
+      this.empty(this.getElement());
       var components = _lodash2.default.clone(this.components);
       _lodash2.default.each(components, function (comp) {
         return _this5.removeComponent(comp, _this5.components);
@@ -10467,7 +10543,7 @@ var FormioComponents = exports.FormioComponents = function (_BaseComponent) {
 
 FormioComponents.customComponents = {};
 
-},{"../utils/index":60,"./base/Base":9,"./index":28,"lodash":251,"native-promise-only":263}],7:[function(_dereq_,module,exports){
+},{"../utils/index":60,"./base/Base":9,"./index":28,"lodash":250,"native-promise-only":262}],7:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -10533,10 +10609,15 @@ var Validator = exports.Validator = {
       }
     });
 
+    var validateCustom = _lodash2.default.get(component, 'component.validate.custom');
     var customErrorMessage = _lodash2.default.get(component, 'component.validate.customMessage');
-    if (result && customErrorMessage) {
-      result = component.t(customErrorMessage, {
+
+    if (result && (customErrorMessage || validateCustom)) {
+
+      result = component.t(customErrorMessage || result, {
+
         data: component.data
+
       });
     }
 
@@ -10738,7 +10819,7 @@ var Validator = exports.Validator = {
   }
 };
 
-},{"../utils":60,"lodash":251}],8:[function(_dereq_,module,exports){
+},{"../utils":60,"lodash":250}],8:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -11372,7 +11453,7 @@ var AddressComponent = exports.AddressComponent = function (_TextFieldComponent)
   return AddressComponent;
 }(_TextField.TextFieldComponent);
 
-},{"../base/Base":9,"../textfield/TextField":41,"lodash":251}],9:[function(_dereq_,module,exports){
+},{"../base/Base":9,"../textfield/TextField":41,"lodash":250}],9:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -12902,7 +12983,7 @@ var BaseComponent = function () {
     key: 'clearOnHide',
     value: function clearOnHide(show) {
       // clearOnHide defaults to true for old forms (without the value set) so only trigger if the value is false.
-      if (this.component.clearOnHide !== false) {
+      if (this.component.clearOnHide !== false && !this.options.readOnly) {
         if (!show) {
           this.deleteValue();
         } else if (!this.hasValue) {
@@ -13158,7 +13239,7 @@ var BaseComponent = function () {
   }, {
     key: 'restoreValue',
     value: function restoreValue() {
-      if (this.hasValue) {
+      if (this.hasValue && !this.isEmpty(this.dataValue)) {
         this.setValue(this.dataValue, {
           noUpdateEvent: true
         });
@@ -13289,7 +13370,7 @@ var BaseComponent = function () {
   }, {
     key: 'isEmpty',
     value: function isEmpty(value) {
-      return value == null || value.length === 0;
+      return value == null || value.length === 0 || _lodash2.default.isEqual(value, this.emptyValue);
     }
 
     /**
@@ -13652,7 +13733,7 @@ var BaseComponent = function () {
       } else if (this.component.customDefaultValue) {
         if (typeof this.component.customDefaultValue === 'string') {
           try {
-            defaultValue = new Function('component', 'row', 'data', 'var value = \'\'; ' + this.component.customDefaultValue + '; return value;')(this, this.data, this.data);
+            defaultValue = new Function('component', 'row', 'data', '_', 'var value = \'\'; ' + this.component.customDefaultValue + '; return value;')(this, this.data, this.data, _lodash2.default);
           } catch (e) {
             defaultValue = null;
             /* eslint-disable no-console */
@@ -13683,7 +13764,7 @@ var BaseComponent = function () {
       }
 
       // Clone so that it creates a new instance.
-      return _lodash2.default.cloneDeep(defaultValue);
+      return _lodash2.default.clone(defaultValue);
     }
   }, {
     key: 'name',
@@ -13914,7 +13995,7 @@ BaseComponent.libraryReady = function (name) {
   return _nativePromiseOnly2.default.reject(name + ' library was not required.');
 };
 
-},{"../../utils":60,"../Validator":7,"i18next":78,"lodash":251,"native-promise-only":263,"tooltip.js":269,"vanilla-text-mask":270}],10:[function(_dereq_,module,exports){
+},{"../../utils":60,"../Validator":7,"i18next":77,"lodash":250,"native-promise-only":262,"tooltip.js":268,"vanilla-text-mask":269}],10:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -14010,7 +14091,7 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
     value: function elementInfo() {
       var info = _get(ButtonComponent.prototype.__proto__ || Object.getPrototypeOf(ButtonComponent.prototype), 'elementInfo', this).call(this);
       info.type = 'button';
-      info.attr.type = this.component.action === 'submit' ? 'submit' : 'button';
+      info.attr.type = ['submit', 'saveState'].indexOf(this.component.action) !== -1 ? 'submit' : 'button';
       this.component.theme = this.component.theme || 'default';
       info.attr.class = 'btn btn-' + this.component.theme;
       if (this.component.block) {
@@ -14054,7 +14135,7 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
         var error = this.ce('span', {
           class: 'help-block'
         });
-        error.appendChild(this.text('Please correct all errors before submitting.'));
+        error.appendChild(this.text(this.errorMessage('error')));
         errorContainer.appendChild(error);
 
         this.on('submitButton', function () {
@@ -14104,7 +14185,9 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
           case 'submit':
             event.preventDefault();
             event.stopPropagation();
-            _this2.emit('submitButton');
+            _this2.emit('submitButton', {
+              state: _this2.component.state || 'submitted'
+            });
             break;
           case 'event':
             _this2.emit(_this2.component.event, _this2.data);
@@ -14150,6 +14233,9 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
           case 'reset':
             _this2.emit('resetForm');
             break;
+          case 'delete':
+            _this2.emit('deleteSubmission');
+            break;
           case 'oauth':
             if (_this2.root === _this2) {
               console.warn('You must add the OAuth button to a form for it to function properly');
@@ -14181,12 +14267,18 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
         name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
         var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
         var results = regex.exec(location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        if (!results) {
+          return results;
+        }
+        return decodeURIComponent(results[1].replace(/\+/g, ' '));
       }
 
       // If this is an OpenID Provider initiated login, perform the click event immediately
-      if (this.component.action === 'oauth' && this.component.oauth.authURI.indexOf(getUrlParameter('iss')) === 0) {
-        this.openOauth();
+      if (this.component.action === 'oauth' && this.component.oauth && this.component.oauth.authURI) {
+        var iss = getUrlParameter('iss');
+        if (iss && this.component.oauth.authURI.indexOf(iss) === 0) {
+          this.openOauth();
+        }
       }
 
       this.autofocus();
@@ -14322,7 +14414,7 @@ var ButtonComponent = exports.ButtonComponent = function (_BaseComponent) {
   return ButtonComponent;
 }(_Base.BaseComponent);
 
-},{"../../utils":60,"../base/Base":9,"lodash":251}],11:[function(_dereq_,module,exports){
+},{"../../utils":60,"../base/Base":9,"lodash":250}],11:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -14654,7 +14746,7 @@ var CheckBoxComponent = exports.CheckBoxComponent = function (_BaseComponent) {
   return CheckBoxComponent;
 }(_Base.BaseComponent);
 
-},{"../base/Base":9,"lodash":251}],12:[function(_dereq_,module,exports){
+},{"../base/Base":9,"lodash":250}],12:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -14795,7 +14887,7 @@ var ColumnsComponent = exports.ColumnsComponent = function (_FormioComponents) {
   return ColumnsComponent;
 }(_Components.FormioComponents);
 
-},{"../Components":6,"lodash":251}],14:[function(_dereq_,module,exports){
+},{"../Components":6,"lodash":250}],14:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -14911,7 +15003,7 @@ var ContainerComponent = exports.ContainerComponent = function (_FormioComponent
   return ContainerComponent;
 }(_Components.FormioComponents);
 
-},{"../Components":6,"lodash":251}],15:[function(_dereq_,module,exports){
+},{"../Components":6,"lodash":250}],15:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -15079,7 +15171,13 @@ var CurrencyComponent = exports.CurrencyComponent = function (_NumberComponent) 
     key: 'parseNumber',
     value: function parseNumber(value) {
       // Strip out the prefix and suffix before parsing.
-      value = value.replace(this.prefix, '').replace(this.suffix, '');
+      if (this.prefix) {
+        value = value.replace(this.prefix, '');
+      }
+
+      if (this.suffix) {
+        value = value.replace(this.suffix, '');
+      }
 
       return _get(CurrencyComponent.prototype.__proto__ || Object.getPrototypeOf(CurrencyComponent.prototype), 'parseNumber', this).call(this, value);
     }
@@ -15103,7 +15201,12 @@ var CurrencyComponent = exports.CurrencyComponent = function (_NumberComponent) 
     key: 'clearInput',
     value: function clearInput(input) {
       try {
-        input = input.replace(this.prefix, '').replace(this.suffix, '');
+        if (this.prefix) {
+          input = input.replace(this.prefix, '');
+        }
+        if (this.suffix) {
+          input = input.replace(this.suffix, '');
+        }
       } catch (err) {
         // If value doesn't have a replace method, continue on as before.
       }
@@ -15124,7 +15227,7 @@ var CurrencyComponent = exports.CurrencyComponent = function (_NumberComponent) 
   return CurrencyComponent;
 }(_Number.NumberComponent);
 
-},{"../../utils":60,"../number/Number":29,"lodash":251,"text-mask-addons":268,"vanilla-text-mask":270}],17:[function(_dereq_,module,exports){
+},{"../../utils":60,"../number/Number":29,"lodash":250,"text-mask-addons":267,"vanilla-text-mask":269}],17:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof2 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -15244,6 +15347,7 @@ var DataGridComponent = exports.DataGridComponent = function (_FormioComponents)
         this.addNewValue();
       }
       this.visibleColumns = true;
+      this.errorContainer = this.element;
       this.buildRows();
       this.createDescription(this.element);
     }
@@ -15278,7 +15382,7 @@ var DataGridComponent = exports.DataGridComponent = function (_FormioComponents)
       var previousNumRows = this.numRows;
       this.setVisibleComponents();
 
-      if (!this.tableBuilt || this.numRows !== previousNumRows || this.numColumns != previousNumColumns) {
+      if (!this.tableBuilt || this.numRows !== previousNumRows || this.numColumns !== previousNumColumns) {
         this.tableBuilt = true;
         return true;
       }
@@ -15296,6 +15400,7 @@ var DataGridComponent = exports.DataGridComponent = function (_FormioComponents)
       }
 
       this.clear();
+      this.createLabel(this.element);
       var tableClass = 'table datagrid-table table-bordered form-group formio-data-grid ';
       _lodash2.default.each(['striped', 'bordered', 'hover', 'condensed'], function (prop) {
         if (_this3.component[prop]) {
@@ -15507,7 +15612,7 @@ var DataGridComponent = exports.DataGridComponent = function (_FormioComponents)
   return DataGridComponent;
 }(_Components.FormioComponents);
 
-},{"../Components":6,"lodash":251}],18:[function(_dereq_,module,exports){
+},{"../Components":6,"lodash":250}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -15719,16 +15824,19 @@ var DateTimeComponent = exports.DateTimeComponent = function (_BaseComponent) {
   }, {
     key: 'setValueAt',
     value: function setValueAt(index, value) {
+      // Convert to a standard ISO-8601 format. Needed for proper IE function.
       if (value) {
-        // Convert to a standard ISO-8601 format. Needed for proper IE function.
         value = (0, _moment2.default)(value).toISOString();
+      }
 
-        var calendar = this.getCalendar(this.inputs[index]);
-        if (!calendar) {
-          return _get(DateTimeComponent.prototype.__proto__ || Object.getPrototypeOf(DateTimeComponent.prototype), 'setValueAt', this).call(this, index, value);
+      _get(DateTimeComponent.prototype.__proto__ || Object.getPrototypeOf(DateTimeComponent.prototype), 'setValueAt', this).call(this, index, value);
+      var calendar = this.getCalendar(this.inputs[index]);
+      if (calendar) {
+        if (value) {
+          calendar.setDate(new Date(value), false);
+        } else {
+          calendar.clear();
         }
-
-        calendar.setDate(value ? new Date(value) : new Date(), false);
       }
     }
   }, {
@@ -15819,7 +15927,7 @@ var DateTimeComponent = exports.DateTimeComponent = function (_BaseComponent) {
   return DateTimeComponent;
 }(_Base.BaseComponent);
 
-},{"../../utils":60,"../base/Base":9,"flatpickr":5,"lodash":251,"moment":262}],19:[function(_dereq_,module,exports){
+},{"../../utils":60,"../base/Base":9,"flatpickr":5,"lodash":250,"moment":261}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -15956,6 +16064,11 @@ var DayComponent = exports.DayComponent = function (_BaseComponent) {
       return info;
     }
   }, {
+    key: 'isEmpty',
+    value: function isEmpty(value) {
+      return _get(DayComponent.prototype.__proto__ || Object.getPrototypeOf(DayComponent.prototype), 'isEmpty', this).call(this, value);
+    }
+  }, {
     key: 'createDayInput',
     value: function createDayInput(subinputAtTheBottom) {
       var _this2 = this;
@@ -16074,7 +16187,6 @@ var DayComponent = exports.DayComponent = function (_BaseComponent) {
         step: '1',
         min: '1',
         placeholder: _lodash2.default.get(this.component, 'fields.year.placeholder', ''),
-        value: new Date().getFullYear(),
         id: id
       });
 
@@ -16313,7 +16425,7 @@ var DayComponent = exports.DayComponent = function (_BaseComponent) {
   return DayComponent;
 }(_Base.BaseComponent);
 
-},{"../../utils":60,"../base/Base":9,"lodash":251,"moment":262}],20:[function(_dereq_,module,exports){
+},{"../../utils":60,"../base/Base":9,"lodash":250,"moment":261}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof2 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -16744,15 +16856,20 @@ var EditGridComponent = exports.EditGridComponent = function (_FormioComponents)
         return false;
       }
 
-      this.setCustomValidity();
+      var message = this.invalid || this.invalidMessage(data, dirty);
+      this.setCustomValidity(message, dirty);
       return true;
     }
   }, {
     key: 'setCustomValidity',
-    value: function setCustomValidity(message) {
+    value: function setCustomValidity(message, dirty) {
       if (this.errorElement && this.errorContainer) {
         this.errorElement.innerHTML = '';
         this.removeChildFrom(this.errorElement, this.errorContainer);
+      }
+      this.removeClass(this.element, 'has-error');
+      if (this.options.highlightErrors) {
+        this.removeClass(this.element, 'alert alert-danger');
       }
       if (message) {
         this.emit('componentError', this.error);
@@ -16762,6 +16879,11 @@ var EditGridComponent = exports.EditGridComponent = function (_FormioComponents)
         });
         errorMessage.appendChild(this.text(message));
         this.appendTo(errorMessage, this.errorElement);
+        // Add error classes
+        this.addClass(this.element, 'has-error');
+        if (dirty && this.options.highlightErrors) {
+          this.addClass(this.element, 'alert alert-danger');
+        }
       }
     }
   }, {
@@ -16835,7 +16957,7 @@ var EditGridComponent = exports.EditGridComponent = function (_FormioComponents)
   return EditGridComponent;
 }(_Components.FormioComponents);
 
-},{"../../utils":60,"../Components":6,"lodash":251}],21:[function(_dereq_,module,exports){
+},{"../../utils":60,"../Components":6,"lodash":250}],21:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -17289,7 +17411,7 @@ var FileComponent = exports.FileComponent = function (_BaseComponent) {
       }
       if (!this.support.dnd) {
         hasWarnings = true;
-        warnings.appendChild(this.ce('p').appendChild(this.text('FFile Drag/Drop is not supported for this browser.')));
+        warnings.appendChild(this.ce('p').appendChild(this.text('File Drag/Drop is not supported for this browser.')));
       }
       if (!this.support.filereader) {
         hasWarnings = true;
@@ -17430,23 +17552,6 @@ var FileComponent = exports.FileComponent = function (_BaseComponent) {
       if (this.component.storage && files && files.length) {
         // files is not really an array and does not have a forEach method, so fake it.
         Array.prototype.forEach.call(files, function (file) {
-          // Check file pattern
-          if (_this9.component.filePattern && !_this9.validatePattern(file, _this9.component.filePattern)) {
-            return;
-          }
-
-          // Check file minimum size
-          if (_this9.component.fileMinSize && !_this9.validateMinSize(file, _this9.component.fileMinSize)) {
-            return;
-          }
-
-          // Check file maximum size
-          if (_this9.component.fileMaxSize && !_this9.validateMaxSize(file, _this9.component.fileMaxSize)) {
-            return;
-          }
-
-          // Get a unique name for this file to keep file collisions from occurring.
-          var fileName = _utils2.default.uniqueName(file.name);
           var fileUpload = {
             originalName: file.name,
             name: fileName,
@@ -17454,6 +17559,27 @@ var FileComponent = exports.FileComponent = function (_BaseComponent) {
             status: 'info',
             message: 'Starting upload'
           };
+
+          // Check file pattern
+          if (_this9.component.filePattern && !_this9.validatePattern(file, _this9.component.filePattern)) {
+            fileUpload.status = 'error';
+            fileUpload.message = 'File is the wrong type; it must be ' + _this9.component.filePattern;
+          }
+
+          // Check file minimum size
+          if (_this9.component.fileMinSize && !_this9.validateMinSize(file, _this9.component.fileMinSize)) {
+            fileUpload.status = 'error';
+            fileUpload.message = 'File is too small; it must be at least ' + _this9.component.fileMinSize;
+          }
+
+          // Check file maximum size
+          if (_this9.component.fileMaxSize && !_this9.validateMaxSize(file, _this9.component.fileMaxSize)) {
+            fileUpload.status = 'error';
+            fileUpload.message = 'File is too big; it must be at most ' + _this9.component.fileMaxSize;
+          }
+
+          // Get a unique name for this file to keep file collisions from occurring.
+          var fileName = _utils2.default.uniqueName(file.name);
           var dir = _this9.interpolate(_this9.component.dir || '', { data: _this9.data, row: _this9.row });
           var fileService = _this9.fileService;
           if (!fileService) {
@@ -17464,7 +17590,7 @@ var FileComponent = exports.FileComponent = function (_BaseComponent) {
           var uploadStatus = _this9.createUploadStatus(fileUpload);
           _this9.uploadStatusList.appendChild(uploadStatus);
 
-          if (fileService) {
+          if (fileUpload.status !== 'error') {
             fileService.uploadFile(_this9.component.storage, file, fileName, dir, function (evt) {
               fileUpload.status = 'progress';
               fileUpload.progress = parseInt(100.0 * evt.loaded / evt.total);
@@ -17570,10 +17696,6 @@ var _get = function get(object, property, receiver) {
   }
 };
 
-var _lodash = _dereq_('lodash');
-
-var _lodash2 = _interopRequireDefault(_lodash);
-
 var _Base = _dereq_('../base/Base');
 
 var _nativePromiseOnly = _dereq_('native-promise-only');
@@ -17622,9 +17744,7 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
 
     var _this = _possibleConstructorReturn(this, (FormComponent.__proto__ || Object.getPrototypeOf(FormComponent)).call(this, component, options, data));
 
-    _this.submitted = false;
     _this.subForm = null;
-    _this.subData = { data: {} };
     _this.subFormReady = new _nativePromiseOnly2.default(function (resolve, reject) {
       _this.subFormReadyResolve = resolve;
       _this.subFormReadyReject = reject;
@@ -17638,7 +17758,7 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
     /**
      * Load the subform.
      */
-    value: function loadSubForm(submission) {
+    value: function loadSubForm() {
       var _this2 = this;
 
       // Only load the subform if the subform isn't loaded and the conditions apply.
@@ -17685,13 +17805,6 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
         }
       }
 
-      var loadSubmission = false;
-      // Add the source to this actual submission if the component is a reference.
-      if (submission._id && this.component.reference && !(this.component.src.indexOf('/submission/') !== -1)) {
-        this.component.src += '/submission/' + submission._id;
-        loadSubmission = true;
-      }
-
       new _formio2.default(this.component.src).loadForm({ params: { live: 1 } }).then(function (formObj) {
         // Iterate through every component and hide the submit button.
         _utils2.default.eachComponent(formObj.components, function (component) {
@@ -17701,20 +17814,15 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
         });
 
         _this2.subForm = (0, _formFactory2.default)(_this2.element, formObj, srcOptions);
-        _this2.dataValue.data = _this2.subForm.data;
-
-        // Forward along changes to parent form.
         _this2.subForm.on('change', function () {
-          return _this2.onChange();
+          _this2.dataValue = _this2.subForm.getValue();
+          _this2.onChange();
         });
         _this2.subForm.url = _this2.component.src;
         _this2.subForm.nosubmit = false;
-        if (loadSubmission) {
-          _this2.subForm.loadSubmission();
-        } else {
-          _this2.subForm.setSubmission(submission);
-        }
+        _this2.restoreValue();
         _this2.subFormReadyResolve(_this2.subForm);
+        return _this2.subForm;
       }).catch(function (err) {
         return _this2.subFormReadyReject(err);
       });
@@ -17736,12 +17844,7 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
         return this.subForm.checkConditions(this.dataValue.data);
       }
 
-      if (_get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'checkConditions', this).call(this, data)) {
-        this.loadSubForm(this.dataValue);
-        return true;
-      }
-
-      return false;
+      return _get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'checkConditions', this).call(this, data);
     }
   }, {
     key: 'calculateValue',
@@ -17763,11 +17866,15 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
       var _this3 = this;
 
       // If we wish to submit the form on next page, then do that here.
-      if (this.subForm && this.component.submit && !this.submitted) {
-        this.submitted = true;
-        return this.subForm.submit(true).then(function (submission) {
-          _this3.dataValue = submission;
-          return submission;
+      if (this.component.submit) {
+        return this.loadSubForm().then(function (form) {
+          return _this3.subForm.submitForm().then(function (result) {
+            _this3.dataValue = result.submission;
+            return _this3.dataValue;
+          }).catch(function (err) {
+            _this3.subForm.onSubmissionError(err);
+            return _nativePromiseOnly2.default.reject(err);
+          });
         });
       } else {
         return _get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'beforeNext', this).call(this);
@@ -17783,15 +17890,28 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
     value: function beforeSubmit() {
       var _this4 = this;
 
-      // Ensure we submit the form.
-      if (this.subForm && this.component.submit && !this.submitted) {
-        this.submitted = true;
-        return this.subForm.submit(true).then(function (submission) {
-          _this4.dataValue = _this4.component.reference ? {
-            _id: submission._id,
-            form: submission.form
-          } : submission;
-          return _this4.dataValue;
+      var submission = this.dataValue;
+
+      // This submission has already been submitted, so just return the reference data.
+      if (submission && submission._id && submission.form) {
+        this.dataValue = this.component.reference ? {
+          _id: submission._id,
+          form: submission.form
+        } : submission;
+        return _nativePromiseOnly2.default.resolve(this.dataValue);
+      }
+
+      // This submission has not been submitted yet.
+      if (this.component.submit) {
+        return this.loadSubForm().then(function (form) {
+          return _this4.subForm.submitForm().then(function (result) {
+            _this4.subForm.loading = false;
+            _this4.dataValue = _this4.component.reference ? {
+              _id: result.submission._id,
+              form: result.submission.form
+            } : result.submission;
+            return _this4.dataValue;
+          });
         });
       } else {
         return _get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'beforeSubmit', this).call(this);
@@ -17801,30 +17921,41 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
     key: 'build',
     value: function build() {
       this.createElement();
-      this.restoreValue();
+
+      // Do not restore the value when building before submission.
+      if (!this.options.beforeSubmit) {
+        this.restoreValue();
+      }
     }
   }, {
     key: 'setValue',
     value: function setValue(submission, flags) {
       var _this5 = this;
 
-      if (submission && (submission._id || !_lodash2.default.isEmpty(submission.data))) {
-        this.loadSubForm(submission).then(function (form) {
-          if (submission._id && !flags.noload) {
+      var changed = _get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'setValue', this).call(this, submission, flags);
+      if (this.subForm) {
+        this.subForm.setValue(submission, flags);
+      } else {
+        this.loadSubForm().then(function (form) {
+          if (submission && submission._id && form.formio && !flags.noload) {
             var submissionUrl = form.formio.formsUrl + '/' + submission.form + '/submission/' + submission._id;
-            form.setSrc(submissionUrl, _this5.options);
+            form.setUrl(submissionUrl, _this5.options);
+            form.nosubmit = false;
+            form.loadSubmission();
           } else {
-            form.setSubmission(submission);
+            form.setValue(submission, flags);
           }
         });
       }
-      this.subData = submission;
-      return _get(FormComponent.prototype.__proto__ || Object.getPrototypeOf(FormComponent.prototype), 'updateValue', this).call(this, flags);
+      return changed;
     }
   }, {
     key: 'getValue',
     value: function getValue() {
-      return this.subData;
+      if (this.subForm) {
+        return this.subForm.getValue();
+      }
+      return this.dataValue;
     }
   }, {
     key: 'emptyValue',
@@ -17836,7 +17967,7 @@ var FormComponent = exports.FormComponent = function (_BaseComponent) {
   return FormComponent;
 }(_Base.BaseComponent);
 
-},{"../../formFactory":46,"../../formio":48,"../../utils":60,"../base/Base":9,"lodash":251,"native-promise-only":263}],25:[function(_dereq_,module,exports){
+},{"../../formFactory":46,"../../formio":48,"../../utils":60,"../base/Base":9,"native-promise-only":262}],25:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -18224,7 +18355,7 @@ var HTMLComponent = exports.HTMLComponent = function (_BaseComponent) {
   return HTMLComponent;
 }(_Base.BaseComponent);
 
-},{"../base/Base":9,"lodash":251}],28:[function(_dereq_,module,exports){
+},{"../base/Base":9,"lodash":250}],28:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -18564,7 +18695,7 @@ var NumberComponent = exports.NumberComponent = function (_BaseComponent) {
   return NumberComponent;
 }(_Base.BaseComponent);
 
-},{"../../utils":60,"../base/Base":9,"lodash":251,"text-mask-addons":268,"vanilla-text-mask":270}],30:[function(_dereq_,module,exports){
+},{"../../utils":60,"../base/Base":9,"lodash":250,"text-mask-addons":267,"vanilla-text-mask":269}],30:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -19048,7 +19179,7 @@ var RadioComponent = exports.RadioComponent = function (_BaseComponent) {
   return RadioComponent;
 }(_Base.BaseComponent);
 
-},{"../base/Base":9,"lodash":251}],34:[function(_dereq_,module,exports){
+},{"../base/Base":9,"lodash":250}],34:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -19995,7 +20126,7 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
   return SelectComponent;
 }(_Base.BaseComponent);
 
-},{"../../formio":48,"../base/Base":9,"choices.js/assets/scripts/dist/choices.js":2,"lodash":251}],36:[function(_dereq_,module,exports){
+},{"../../formio":48,"../base/Base":9,"choices.js/assets/scripts/dist/choices.js":2,"lodash":250}],36:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -20156,7 +20287,7 @@ var SelectBoxesComponent = exports.SelectBoxesComponent = function (_RadioCompon
   return SelectBoxesComponent;
 }(_Radio.RadioComponent);
 
-},{"../radio/Radio":33,"lodash":251}],37:[function(_dereq_,module,exports){
+},{"../radio/Radio":33,"lodash":250}],37:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -20431,7 +20562,7 @@ var SignatureComponent = exports.SignatureComponent = function (_BaseComponent) 
   return SignatureComponent;
 }(_Base.BaseComponent);
 
-},{"../base/Base":9,"signature_pad/dist/signature_pad.js":267}],38:[function(_dereq_,module,exports){
+},{"../base/Base":9,"signature_pad/dist/signature_pad.js":266}],38:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -20632,7 +20763,7 @@ var SurveyComponent = exports.SurveyComponent = function (_BaseComponent) {
   return SurveyComponent;
 }(_Base.BaseComponent);
 
-},{"../base/Base":9,"lodash":251}],39:[function(_dereq_,module,exports){
+},{"../base/Base":9,"lodash":250}],39:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -20742,7 +20873,7 @@ var TableComponent = exports.TableComponent = function (_FormioComponents) {
   return TableComponent;
 }(_Components.FormioComponents);
 
-},{"../Components":6,"lodash":251}],40:[function(_dereq_,module,exports){
+},{"../Components":6,"lodash":250}],40:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -21144,7 +21275,7 @@ var TimeComponent = exports.TimeComponent = function (_TextFieldComponent) {
   return TimeComponent;
 }(_TextField.TextFieldComponent);
 
-},{"../textfield/TextField":41,"moment":262}],43:[function(_dereq_,module,exports){
+},{"../textfield/TextField":41,"moment":261}],43:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -21314,7 +21445,7 @@ exports.default = function (element, form, options) {
   }
 };
 
-},{"./formFactory":46,"./formio":48,"native-promise-only":263}],46:[function(_dereq_,module,exports){
+},{"./formFactory":46,"./formio":48,"native-promise-only":262}],46:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -21835,6 +21966,7 @@ var FormioForm = function (_FormioComponents) {
       } else {
         this.submissionReadyResolve();
       }
+      return this.submissionReady;
     }
 
     /**
@@ -21978,19 +22110,20 @@ var FormioForm = function (_FormioComponents) {
     /**
      * Sets a submission and returns the promise when it is ready.
      * @param submission
+     * @param flags
      * @return {Promise.<TResult>}
      */
-    value: function setSubmission(submission) {
+    value: function setSubmission(submission, flags) {
       var _this7 = this;
 
       return this.onSubmission = this.formReady.then(function () {
         // If nothing changed, still trigger an update.
-        if (!_this7.setValue(submission)) {
+        if (!_this7.setValue(submission, flags)) {
           _this7.triggerChange({
             noValidate: true
           });
         }
-        _this7.submissionReadyResolve();
+        _this7.submissionReadyResolve(submission);
       }, function (err) {
         return _this7.submissionReadyReject(err);
       }).catch(function (err) {
@@ -22082,6 +22215,9 @@ var FormioForm = function (_FormioComponents) {
         _this9.on('resetForm', function () {
           return _this9.reset();
         }, true);
+        _this9.on('deleteSubmission', function () {
+          return _this9.deleteSubmission();
+        }, true);
         _this9.on('refreshData', function () {
           return _this9.updateValue();
         });
@@ -22138,8 +22274,8 @@ var FormioForm = function (_FormioComponents) {
     value: function build() {
       var _this10 = this;
 
-      this.on('submitButton', function () {
-        return _this10.submit();
+      this.on('submitButton', function (options) {
+        return _this10.submit(false, options);
       }, true);
       this.addComponents();
       this.on('requestUrl', function (args) {
@@ -22217,17 +22353,15 @@ var FormioForm = function (_FormioComponents) {
   }, {
     key: 'onSubmissionError',
     value: function onSubmissionError(error) {
-      if (!error) {
-        return;
-      }
+      if (error) {
+        // Normalize the error.
+        if (typeof error === 'string') {
+          error = { message: error };
+        }
 
-      // Normalize the error.
-      if (typeof error === 'string') {
-        error = { message: error };
-      }
-
-      if ('details' in error) {
-        error = error.details;
+        if ('details' in error) {
+          error = error.details;
+        }
       }
 
       return this.showErrors(error);
@@ -22278,6 +22412,21 @@ var FormioForm = function (_FormioComponents) {
     }
 
     /**
+     * Send a delete request to the server.
+     */
+
+  }, {
+    key: 'deleteSubmission',
+    value: function deleteSubmission() {
+      var _this11 = this;
+
+      return this.formio.deleteSubmission().then(function () {
+        _this11.emit('submissionDeleted', _this11.submission);
+        _this11.reset();
+      });
+    }
+
+    /**
      * Cancels the submission.
      *
      * @alias reset
@@ -22294,39 +22443,62 @@ var FormioForm = function (_FormioComponents) {
       }
     }
   }, {
-    key: 'executeSubmit',
-    value: function executeSubmit() {
-      var _this11 = this;
+    key: 'submitForm',
+    value: function submitForm() {
+      var _this12 = this;
+
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
       return new _nativePromiseOnly2.default(function (resolve, reject) {
         // Read-only forms should never submit.
-        if (_this11.options.readOnly) {
-          return resolve(_this11.submission);
+        if (_this12.options.readOnly) {
+          return resolve({
+            submission: _this12.submission,
+            saved: false
+          });
         }
 
-        var submission = _this11.submission || {};
-        _this11.hook('beforeSubmit', submission, function (err) {
+        var submission = _this12.submission || {};
+        submission.state = options.state || 'submitted';
+        var isDraft = submission.state === 'draft';
+        _this12.hook('beforeSubmit', submission, function (err) {
           if (err) {
-            _this11.showErrors(err);
-            return reject(err.message || err);
+            return reject(err);
           }
 
-          if (submission && submission.data && _this11.checkValidity(submission.data, true)) {
-            _this11.loading = true;
-            if (_this11.nosubmit || !_this11.formio) {
-              return resolve(_this11.onSubmit(submission, false));
-            }
-            return _this11.formio.saveSubmission(submission).then(function (result) {
-              return resolve(_this11.onSubmit(result, true));
-            }).catch(function (err) {
-              _this11.onSubmissionError(err);
-              reject(err);
-            });
-          } else {
-            _this11.showErrors();
+          if (!isDraft && !submission.data) {
             return reject('Invalid Submission');
           }
+
+          if (!isDraft && !_this12.checkValidity(submission.data, true)) {
+            return reject();
+          }
+
+          _this12.loading = true;
+          if (_this12.nosubmit || !_this12.formio) {
+            return resolve({
+              submission: submission,
+              saved: false
+            });
+          }
+          _this12.formio.saveSubmission(submission).then(function (result) {
+            return resolve({
+              submission: result,
+              saved: true
+            });
+          }).catch(reject);
         });
+      });
+    }
+  }, {
+    key: 'executeSubmit',
+    value: function executeSubmit(options) {
+      var _this13 = this;
+
+      return this.submitForm(options).then(function (result) {
+        return _this13.onSubmit(result.submission, result.saved);
+      }).catch(function (err) {
+        return _nativePromiseOnly2.default.reject(_this13.onSubmissionError(err));
       });
     }
 
@@ -22352,21 +22524,21 @@ var FormioForm = function (_FormioComponents) {
 
   }, {
     key: 'submit',
-    value: function submit(before) {
-      var _this12 = this;
+    value: function submit(before, options) {
+      var _this14 = this;
 
       if (!before) {
-        return this.beforeSubmit().then(function () {
-          return _this12.executeSubmit();
+        return this.beforeSubmit(options).then(function () {
+          return _this14.executeSubmit(options);
         });
       } else {
-        return this.executeSubmit();
+        return this.executeSubmit(options);
       }
     }
   }, {
     key: 'submitUrl',
     value: function submitUrl(URL, headers) {
-      var _this13 = this;
+      var _this15 = this;
 
       if (!URL) {
         return console.warn('Missing URL argument');
@@ -22389,8 +22561,8 @@ var FormioForm = function (_FormioComponents) {
       if (API_URL && settings) {
         try {
           _formio2.default.makeStaticRequest(API_URL, settings.method, submission, settings.headers).then(function () {
-            _this13.emit('requestDone');
-            _this13.setAlert('success', '<p> Success </p>');
+            _this15.emit('requestDone');
+            _this15.setAlert('success', '<p> Success </p>');
           });
         } catch (e) {
           this.showErrors(e.statusText + ' ' + e.status);
@@ -22406,15 +22578,15 @@ var FormioForm = function (_FormioComponents) {
   }, {
     key: 'language',
     set: function set(lang) {
-      var _this14 = this;
+      var _this16 = this;
 
       return new _nativePromiseOnly2.default(function (resolve, reject) {
-        _this14.options.language = lang;
+        _this16.options.language = lang;
         _i18next2.default.changeLanguage(lang, function (err) {
           if (err) {
             return reject(err);
           }
-          _this14.redraw();
+          _this16.redraw();
           resolve();
         });
       });
@@ -22452,10 +22624,10 @@ var FormioForm = function (_FormioComponents) {
   }, {
     key: 'ready',
     get: function get() {
-      var _this15 = this;
+      var _this17 = this;
 
       return this.formReady.then(function () {
-        return _this15.submissionReady;
+        return _this17.submissionReady;
       });
     }
 
@@ -22583,7 +22755,7 @@ FormioForm.setBaseUrl = _formio2.default.setBaseUrl;
 FormioForm.setApiUrl = _formio2.default.setApiUrl;
 FormioForm.setAppUrl = _formio2.default.setAppUrl;
 
-},{"./components/Components":6,"./formio":48,"./i18n":51,"eventemitter2":4,"i18next":78,"lodash":251,"native-promise-only":263}],48:[function(_dereq_,module,exports){
+},{"./components/Components":6,"./formio":48,"./i18n":51,"eventemitter2":4,"i18next":77,"lodash":250,"native-promise-only":262}],48:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 // Intentionally use native-promise-only here... Other promise libraries (es6-promise)
@@ -23512,8 +23684,7 @@ var Formio = function () {
           err.message = 'Could not connect to API server (' + err.message + ')';
           err.networkError = true;
         }
-        // Propagate error so client can handle accordingly
-        throw err;
+        return _nativePromiseOnly2.default.reject(err);
       });
     }
   }, {
@@ -24014,7 +24185,7 @@ module.exports = global.Formio = Formio;
 exports.default = Formio;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./providers":54,"browser-cookies":1,"eventemitter2":4,"native-promise-only":263,"shallow-copy":266,"whatwg-fetch":271}],49:[function(_dereq_,module,exports){
+},{"./providers":54,"browser-cookies":1,"eventemitter2":4,"native-promise-only":262,"shallow-copy":265,"whatwg-fetch":270}],49:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -24247,7 +24418,7 @@ window.addEventListener('message', function (event) {
   }
 });
 
-},{"./formio":48,"./formio.form":47,"./pdf.image":53,"native-promise-only":263}],50:[function(_dereq_,module,exports){
+},{"./formio":48,"./formio.form":47,"./pdf.image":53,"native-promise-only":262}],50:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -24418,16 +24589,29 @@ var FormioWizard = function (_FormioForm) {
       return this.page - 1;
     }
   }, {
+    key: 'beforeSubmit',
+    value: function beforeSubmit() {
+      var _this2 = this;
+
+      var ops = [];
+      var pageOptions = _lodash2.default.clone(this.options);
+      pageOptions.beforeSubmit = true;
+      _lodash2.default.each(this.pages, function (page) {
+        return ops.push(_this2.createComponent(page, pageOptions).beforeSubmit());
+      });
+      return _nativePromiseOnly2.default.all(ops);
+    }
+  }, {
     key: 'nextPage',
     value: function nextPage() {
-      var _this2 = this;
+      var _this3 = this;
 
       // Read-only forms should not worry about validation before going to next page, nor should they submit.
       if (this.options.readOnly) {
         this.history.push(this.page);
         return this.setPage(this.getNextPage(this.submission.data, this.page)).then(function () {
-          _this2._nextPage = _this2.getNextPage(_this2.submission.data, _this2.page);
-          _this2.emit('nextPage', { page: _this2.page, submission: _this2.submission });
+          _this3._nextPage = _this3.getNextPage(_this3.submission.data, _this3.page);
+          _this3.emit('nextPage', { page: _this3.page, submission: _this3.submission });
         });
       }
 
@@ -24437,10 +24621,10 @@ var FormioWizard = function (_FormioForm) {
           noValidate: true
         });
         return this.beforeNext().then(function () {
-          _this2.history.push(_this2.page);
-          return _this2.setPage(_this2.getNextPage(_this2.submission.data, _this2.page)).then(function () {
-            _this2._nextPage = _this2.getNextPage(_this2.submission.data, _this2.page);
-            _this2.emit('nextPage', { page: _this2.page, submission: _this2.submission });
+          _this3.history.push(_this3.page);
+          return _this3.setPage(_this3.getNextPage(_this3.submission.data, _this3.page)).then(function () {
+            _this3._nextPage = _this3.getNextPage(_this3.submission.data, _this3.page);
+            _this3.emit('nextPage', { page: _this3.page, submission: _this3.submission });
           });
         });
       } else {
@@ -24450,11 +24634,11 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'prevPage',
     value: function prevPage() {
-      var _this3 = this;
+      var _this4 = this;
 
       var prevPage = this.getPreviousPage();
       return this.setPage(prevPage).then(function () {
-        _this3.emit('prevPage', { page: _this3.page, submission: _this3.submission });
+        _this4.emit('prevPage', { page: _this4.page, submission: _this4.submission });
       });
     }
   }, {
@@ -24531,18 +24715,18 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'buildPages',
     value: function buildPages(form) {
-      var _this4 = this;
+      var _this5 = this;
 
       this.pages = [];
       _lodash2.default.each(form.components, function (component) {
         if (component.type === 'panel') {
           // Ensure that this page can be seen.
-          if (_utils2.default.checkCondition(component, _this4.data, _this4.data)) {
-            _this4.pages.push(component);
+          if (_utils2.default.checkCondition(component, _this5.data, _this5.data)) {
+            _this5.pages.push(component);
           }
         } else if (component.type === 'hidden') {
           // Global components are hidden components that can propagate between pages.
-          _this4.globalComponents.push(component);
+          _this5.globalComponents.push(component);
         }
       });
       this.buildWizardHeader();
@@ -24561,12 +24745,12 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'build',
     value: function build() {
-      var _this5 = this;
+      var _this6 = this;
 
       _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'build', this).call(this);
       this.formReady.then(function () {
-        _this5.buildWizardHeader();
-        _this5.buildWizardNav();
+        _this6.buildWizardHeader();
+        _this6.buildWizardNav();
       });
     }
   }, {
@@ -24597,7 +24781,7 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'buildWizardHeader',
     value: function buildWizardHeader() {
-      var _this6 = this;
+      var _this7 = this;
 
       if (this.wizardHeader) {
         this.wizardHeader.innerHTML = '';
@@ -24634,16 +24818,16 @@ var FormioWizard = function (_FormioForm) {
       var showHistory = currentPage.breadcrumb.toLowerCase() === 'history';
       _lodash2.default.each(this.pages, function (page, i) {
         // See if this page is in our history.
-        if (showHistory && _this6.page !== i && !(_this6.history.indexOf(i) !== -1)) {
+        if (showHistory && _this7.page !== i && !(_this7.history.indexOf(i) !== -1)) {
           return;
         }
 
         // Set clickable based on breadcrumb settings
-        var clickable = _this6.page !== i && _this6.options.breadcrumbSettings.clickable;
+        var clickable = _this7.page !== i && _this7.options.breadcrumbSettings.clickable;
         var pageClass = 'page-item ';
-        pageClass += i === _this6.page ? 'active' : clickable ? '' : 'disabled';
+        pageClass += i === _this7.page ? 'active' : clickable ? '' : 'disabled';
 
-        var pageButton = _this6.ce('li', {
+        var pageButton = _this7.ce('li', {
           class: pageClass,
           style: clickable ? 'cursor: pointer;' : ''
         });
@@ -24651,26 +24835,26 @@ var FormioWizard = function (_FormioForm) {
         // Navigate to the page as they click on it.
 
         if (clickable) {
-          _this6.addEventListener(pageButton, 'click', function (event) {
+          _this7.addEventListener(pageButton, 'click', function (event) {
             event.preventDefault();
-            _this6.setPage(i);
+            _this7.setPage(i);
           });
         }
 
-        var pageLabel = _this6.ce('span', {
+        var pageLabel = _this7.ce('span', {
           class: 'page-link'
         });
         var pageTitle = page.title;
         if (currentPage.breadcrumb.toLowerCase() === 'condensed') {
-          pageTitle = i === _this6.page || showHistory ? page.title : i + 1;
+          pageTitle = i === _this7.page || showHistory ? page.title : i + 1;
           if (!pageTitle) {
             pageTitle = i + 1;
           }
         }
 
-        pageLabel.appendChild(_this6.text(pageTitle));
+        pageLabel.appendChild(_this7.text(pageTitle));
         pageButton.appendChild(pageLabel);
-        _this6.wizardHeaderList.appendChild(pageButton);
+        _this7.wizardHeaderList.appendChild(pageButton);
       });
     }
   }, {
@@ -24687,7 +24871,7 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'onChange',
     value: function onChange(flags, changed) {
-      var _this7 = this;
+      var _this8 = this;
 
       _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onChange', this).call(this, flags, changed);
 
@@ -24700,8 +24884,8 @@ var FormioWizard = function (_FormioForm) {
         }
 
         if (_utils2.default.hasCondition(component)) {
-          var hasPage = _this7.pages && _this7.pages[pageIndex] && _this7.pageId(_this7.pages[pageIndex]) === _this7.pageId(component);
-          var shouldShow = _utils2.default.checkCondition(component, _this7.data, _this7.data);
+          var hasPage = _this8.pages && _this8.pages[pageIndex] && _this8.pageId(_this8.pages[pageIndex]) === _this8.pageId(component);
+          var shouldShow = _utils2.default.checkCondition(component, _this8.data, _this8.data);
           if (shouldShow && !hasPage || !shouldShow && hasPage) {
             rebuild = true;
             return false;
@@ -24729,7 +24913,7 @@ var FormioWizard = function (_FormioForm) {
   }, {
     key: 'buildWizardNav',
     value: function buildWizardNav(nextPage) {
-      var _this8 = this;
+      var _this9 = this;
 
       if (this.wizardNav) {
         this.wizardNav.innerHTML = '';
@@ -24743,35 +24927,35 @@ var FormioWizard = function (_FormioForm) {
       });
       this.element.appendChild(this.wizardNav);
       _lodash2.default.each([{ name: 'cancel', method: 'cancel', class: 'btn btn-default btn-secondary' }, { name: 'previous', method: 'prevPage', class: 'btn btn-primary' }, { name: 'next', method: 'nextPage', class: 'btn btn-primary' }, { name: 'submit', method: 'submit', class: 'btn btn-primary' }], function (button) {
-        if (!_this8.hasButton(button.name, nextPage)) {
+        if (!_this9.hasButton(button.name, nextPage)) {
           return;
         }
-        var buttonWrapper = _this8.ce('li', {
+        var buttonWrapper = _this9.ce('li', {
           class: 'list-inline-item'
         });
         var buttonProp = button.name + 'Button';
-        var buttonElement = _this8[buttonProp] = _this8.ce('button', {
+        var buttonElement = _this9[buttonProp] = _this9.ce('button', {
           class: button.class + ' btn-wizard-nav-' + button.name
         });
-        buttonElement.appendChild(_this8.text(_this8.t(button.name)));
-        _this8.addEventListener(_this8[buttonProp], 'click', function (event) {
+        buttonElement.appendChild(_this9.text(_this9.t(button.name)));
+        _this9.addEventListener(_this9[buttonProp], 'click', function (event) {
           event.preventDefault();
 
           // Disable the button until done.
           buttonElement.setAttribute('disabled', 'disabled');
-          _this8.setLoading(buttonElement, true);
+          _this9.setLoading(buttonElement, true);
 
           // Call the button method, then re-enable the button.
-          _this8[button.method]().then(function () {
+          _this9[button.method]().then(function () {
             buttonElement.removeAttribute('disabled');
-            _this8.setLoading(buttonElement, false);
+            _this9.setLoading(buttonElement, false);
           }).catch(function () {
             buttonElement.removeAttribute('disabled');
-            _this8.setLoading(buttonElement, false);
+            _this9.setLoading(buttonElement, false);
           });
         });
-        buttonWrapper.appendChild(_this8[buttonProp]);
-        _this8.wizardNav.appendChild(buttonWrapper);
+        buttonWrapper.appendChild(_this9[buttonProp]);
+        _this9.wizardNav.appendChild(buttonWrapper);
       });
     }
   }, {
@@ -24790,7 +24974,7 @@ FormioWizard.setBaseUrl = _formio4.default.setBaseUrl;
 FormioWizard.setApiUrl = _formio4.default.setApiUrl;
 FormioWizard.setAppUrl = _formio4.default.setAppUrl;
 
-},{"./formio":48,"./formio.form":47,"./utils":60,"lodash":251,"native-promise-only":263}],51:[function(_dereq_,module,exports){
+},{"./formio":48,"./formio.form":47,"./utils":60,"lodash":250,"native-promise-only":262}],51:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = {
@@ -24980,7 +25164,7 @@ var base64 = function base64() {
 base64.title = 'Base64';
 exports.default = base64;
 
-},{"native-promise-only":263}],56:[function(_dereq_,module,exports){
+},{"native-promise-only":262}],56:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25053,7 +25237,7 @@ var dropbox = function dropbox(formio) {
 dropbox.title = 'Dropbox';
 exports.default = dropbox;
 
-},{"native-promise-only":263}],57:[function(_dereq_,module,exports){
+},{"native-promise-only":262}],57:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25208,7 +25392,7 @@ var s3 = function s3(formio) {
 s3.title = 'S3';
 exports.default = s3;
 
-},{"native-promise-only":263}],59:[function(_dereq_,module,exports){
+},{"native-promise-only":262}],59:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25298,7 +25482,7 @@ var url = function url(formio) {
 url.title = 'Url';
 exports.default = url;
 
-},{"native-promise-only":263}],60:[function(_dereq_,module,exports){
+},{"native-promise-only":262}],60:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -26009,12 +26193,17 @@ var FormioUtils = {
         lang = _ref.lang;
 
     // Get the prefix and suffix from the localized string.
-    var regex = '(.*)?100' + (decimalSeparator === '.' ? '\\.' : decimalSeparator) + '0{' + decimalLimit + '}(.*)?';
+    var regex = '(.*)?100';
+    if (decimalLimit) {
+      regex += (decimalSeparator === '.' ? '\\.' : decimalSeparator) + '0{' + decimalLimit + '}';
+    }
+    regex += '(.*)?';
     var parts = 100 .toLocaleString(lang, {
       style: 'currency',
       currency: currency,
       useGrouping: true,
-      maximumFractionDigits: decimalLimit
+      maximumFractionDigits: decimalLimit,
+      minimumFractionDigits: decimalLimit
     }).replace('.', decimalSeparator).match(new RegExp(regex));
     return {
       prefix: parts[1] || '',
@@ -26027,7 +26216,7 @@ module.exports = global.FormioUtils = FormioUtils;
 exports.default = FormioUtils;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsonlogic/operators":61,"json-logic-js":62,"lodash":251,"moment":262}],61:[function(_dereq_,module,exports){
+},{"./jsonlogic/operators":61,"json-logic-js":62,"lodash":250,"moment":261}],61:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26722,7 +26911,6 @@ var Connector = function (_EventEmitter) {
       this.logger.warn('No backend was added via i18next.use. Will not load resources.');
       return callback && callback();
     }
-    var options = _extends({}, this.backend.options, this.options.backend);
 
     if (typeof languages === 'string') languages = this.languageUtils.toResolveHierarchy(languages);
     if (typeof namespaces === 'string') namespaces = [namespaces];
@@ -26733,33 +26921,9 @@ var Connector = function (_EventEmitter) {
       return null; // pendings will trigger callback
     }
 
-    // load with multi-load
-    if (options.allowMultiLoading && this.backend.readMulti) {
-      this.read(toLoad.toLoadLanguages, toLoad.toLoadNamespaces, 'readMulti', null, null, function (err, data) {
-        if (err) _this5.logger.warn('loading namespaces ' + toLoad.toLoadNamespaces.join(', ') + ' for languages ' + toLoad.toLoadLanguages.join(', ') + ' via multiloading failed', err);
-        if (!err && data) _this5.logger.log('successfully loaded namespaces ' + toLoad.toLoadNamespaces.join(', ') + ' for languages ' + toLoad.toLoadLanguages.join(', ') + ' via multiloading', data);
-
-        toLoad.toLoad.forEach(function (name) {
-          var _name$split3 = name.split('|'),
-              _name$split4 = _slicedToArray(_name$split3, 2),
-              l = _name$split4[0],
-              n = _name$split4[1];
-
-          var bundle = utils.getPath(data, [l, n]);
-          if (bundle) {
-            _this5.loaded(name, err, bundle);
-          } else {
-            var error = 'loading namespace ' + n + ' for language ' + l + ' via multiloading failed';
-            _this5.loaded(name, error);
-            _this5.logger.error(error);
-          }
-        });
-      });
-    } else {
-      toLoad.toLoad.forEach(function (name) {
-        _this5.loadOne(name);
-      });
-    }
+    toLoad.toLoad.forEach(function (name) {
+      _this5.loadOne(name);
+    });
   };
 
   Connector.prototype.reload = function reload(languages, namespaces) {
@@ -26768,37 +26932,15 @@ var Connector = function (_EventEmitter) {
     if (!this.backend) {
       this.logger.warn('No backend was added via i18next.use. Will not load resources.');
     }
-    var options = _extends({}, this.backend.options, this.options.backend);
 
     if (typeof languages === 'string') languages = this.languageUtils.toResolveHierarchy(languages);
     if (typeof namespaces === 'string') namespaces = [namespaces];
 
-    // load with multi-load
-    if (options.allowMultiLoading && this.backend.readMulti) {
-      this.read(languages, namespaces, 'readMulti', null, null, function (err, data) {
-        if (err) _this6.logger.warn('reloading namespaces ' + namespaces.join(', ') + ' for languages ' + languages.join(', ') + ' via multiloading failed', err);
-        if (!err && data) _this6.logger.log('successfully reloaded namespaces ' + namespaces.join(', ') + ' for languages ' + languages.join(', ') + ' via multiloading', data);
-
-        languages.forEach(function (l) {
-          namespaces.forEach(function (n) {
-            var bundle = utils.getPath(data, [l, n]);
-            if (bundle) {
-              _this6.loaded(l + '|' + n, err, bundle);
-            } else {
-              var error = 'reloading namespace ' + n + ' for language ' + l + ' via multiloading failed';
-              _this6.loaded(l + '|' + n, error);
-              _this6.logger.error(error);
-            }
-          });
-        });
+    languages.forEach(function (l) {
+      namespaces.forEach(function (n) {
+        _this6.loadOne(l + '|' + n, 're');
       });
-    } else {
-      languages.forEach(function (l) {
-        namespaces.forEach(function (n) {
-          _this6.loadOne(l + '|' + n, 're');
-        });
-      });
-    }
+    });
   };
 
   Connector.prototype.loadOne = function loadOne(name) {
@@ -26806,10 +26948,10 @@ var Connector = function (_EventEmitter) {
 
     var prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
 
-    var _name$split5 = name.split('|'),
-        _name$split6 = _slicedToArray(_name$split5, 2),
-        lng = _name$split6[0],
-        ns = _name$split6[1];
+    var _name$split3 = name.split('|'),
+        _name$split4 = _slicedToArray(_name$split3, 2),
+        lng = _name$split4[0],
+        ns = _name$split4[1];
 
     this.read(lng, ns, 'read', null, null, function (err, data) {
       if (err) _this7.logger.warn(prefix + 'loading namespace ' + ns + ' for language ' + lng + ' failed', err);
@@ -26835,98 +26977,7 @@ var Connector = function (_EventEmitter) {
 }(_EventEmitter3.default);
 
 exports.default = Connector;
-},{"./EventEmitter.js":66,"./logger.js":75,"./utils.js":77}],65:[function(_dereq_,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _logger = _dereq_('./logger.js');
-
-var _logger2 = _interopRequireDefault(_logger);
-
-var _EventEmitter2 = _dereq_('./EventEmitter.js');
-
-var _EventEmitter3 = _interopRequireDefault(_EventEmitter2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _defaults(obj, defaults) { var keys = Object.getOwnPropertyNames(defaults); for (var i = 0; i < keys.length; i++) { var key = keys[i]; var value = Object.getOwnPropertyDescriptor(defaults, key); if (value && value.configurable && obj[key] === undefined) { Object.defineProperty(obj, key, value); } } return obj; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : _defaults(subClass, superClass); }
-
-var Connector = function (_EventEmitter) {
-  _inherits(Connector, _EventEmitter);
-
-  function Connector(cache, store, services) {
-    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-
-    _classCallCheck(this, Connector);
-
-    var _this = _possibleConstructorReturn(this, _EventEmitter.call(this));
-
-    _this.cache = cache;
-    _this.store = store;
-    _this.services = services;
-    _this.options = options;
-    _this.logger = _logger2.default.create('cacheConnector');
-
-    if (_this.cache && _this.cache.init) _this.cache.init(services, options.cache, options);
-    return _this;
-  }
-
-  /* eslint consistent-return: 0 */
-
-
-  Connector.prototype.load = function load(languages, namespaces, callback) {
-    var _this2 = this;
-
-    if (!this.cache) return callback && callback();
-    var options = _extends({}, this.cache.options, this.options.cache);
-
-    var loadLngs = typeof languages === 'string' ? this.services.languageUtils.toResolveHierarchy(languages) : languages;
-
-    if (options.enabled) {
-      this.cache.load(loadLngs, function (err, data) {
-        if (err) _this2.logger.error('loading languages ' + loadLngs.join(', ') + ' from cache failed', err);
-        if (data) {
-          /* eslint no-restricted-syntax: 0 */
-          for (var l in data) {
-            if (Object.prototype.hasOwnProperty.call(data, l)) {
-              for (var n in data[l]) {
-                if (Object.prototype.hasOwnProperty.call(data[l], n)) {
-                  if (n !== 'i18nStamp') {
-                    var bundle = data[l][n];
-                    if (bundle) _this2.store.addResourceBundle(l, n, bundle);
-                  }
-                }
-              }
-            }
-          }
-        }
-        if (callback) callback();
-      });
-    } else if (callback) {
-      callback();
-    }
-  };
-
-  Connector.prototype.save = function save() {
-    if (this.cache && this.options.cache && this.options.cache.enabled) this.cache.save(this.store.data);
-  };
-
-  return Connector;
-}(_EventEmitter3.default);
-
-exports.default = Connector;
-},{"./EventEmitter.js":66,"./logger.js":75}],66:[function(_dereq_,module,exports){
+},{"./EventEmitter.js":65,"./logger.js":74,"./utils.js":76}],65:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26996,7 +27047,7 @@ var EventEmitter = function () {
 }();
 
 exports.default = EventEmitter;
-},{}],67:[function(_dereq_,module,exports){
+},{}],66:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27123,8 +27174,7 @@ var Interpolator = function () {
     // regular escape on demand
     while (match = this.regexp.exec(str)) {
       value = handleFormat(match[1].trim());
-      if (typeof value !== 'string') value = utils.makeString(value);
-      if (!value) {
+      if (value === undefined) {
         if (typeof this.options.missingInterpolationHandler === 'function') {
           var temp = this.options.missingInterpolationHandler(str, match);
           value = typeof temp === 'string' ? temp : '';
@@ -27132,6 +27182,8 @@ var Interpolator = function () {
           this.logger.warn('missed to pass in variable ' + match[1] + ' for interpolating ' + str);
           value = '';
         }
+      } else if (typeof value !== 'string') {
+        value = utils.makeString(value);
       }
       value = this.escapeValue ? regexSafe(this.escape(value)) : regexSafe(value);
       str = str.replace(match[0], value);
@@ -27199,7 +27251,7 @@ var Interpolator = function () {
 }();
 
 exports.default = Interpolator;
-},{"./logger.js":75,"./utils.js":77}],68:[function(_dereq_,module,exports){
+},{"./logger.js":74,"./utils.js":76}],67:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27333,7 +27385,7 @@ var LanguageUtil = function () {
 }();
 
 exports.default = LanguageUtil;
-},{"./logger.js":75}],69:[function(_dereq_,module,exports){
+},{"./logger.js":74}],68:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27523,7 +27575,7 @@ var PluralResolver = function () {
 }();
 
 exports.default = PluralResolver;
-},{"./logger.js":75}],70:[function(_dereq_,module,exports){
+},{"./logger.js":74}],69:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27685,7 +27737,7 @@ var ResourceStore = function (_EventEmitter) {
 }(_EventEmitter3.default);
 
 exports.default = ResourceStore;
-},{"./EventEmitter.js":66,"./utils.js":77}],71:[function(_dereq_,module,exports){
+},{"./EventEmitter.js":65,"./utils.js":76}],70:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27734,7 +27786,7 @@ var Translator = function (_EventEmitter) {
 
     var _this = _possibleConstructorReturn(this, _EventEmitter.call(this));
 
-    utils.copy(['resourceStore', 'languageUtils', 'pluralResolver', 'interpolator', 'backendConnector'], services, _this);
+    utils.copy(['resourceStore', 'languageUtils', 'pluralResolver', 'interpolator', 'backendConnector', 'i18nFormat'], services, _this);
 
     _this.options = options;
     _this.logger = _logger2.default.create('translator');
@@ -27901,7 +27953,7 @@ var Translator = function (_EventEmitter) {
       }
 
       // extend
-      res = this.extendTranslation(res, keys, options);
+      res = this.extendTranslation(res, keys, options, resolved);
 
       // append namespace if still key
       if (usedKey && res === key && this.options.appendNamespaceToMissingKey) res = namespace + ':' + key;
@@ -27914,22 +27966,27 @@ var Translator = function (_EventEmitter) {
     return res;
   };
 
-  Translator.prototype.extendTranslation = function extendTranslation(res, key, options) {
+  Translator.prototype.extendTranslation = function extendTranslation(res, key, options, resolved) {
     var _this3 = this;
 
-    if (options.interpolation) this.interpolator.init(_extends({}, options, { interpolation: _extends({}, this.options.interpolation, options.interpolation) }));
+    if (this.i18nFormat && this.i18nFormat.parse) {
+      res = this.i18nFormat.parse(res, options, resolved.usedLng, resolved.usedNS, resolved.usedKey);
+    } else {
+      // i18next.parsing
+      if (options.interpolation) this.interpolator.init(_extends({}, options, { interpolation: _extends({}, this.options.interpolation, options.interpolation) }));
 
-    // interpolate
-    var data = options.replace && typeof options.replace !== 'string' ? options.replace : options;
-    if (this.options.interpolation.defaultVariables) data = _extends({}, this.options.interpolation.defaultVariables, data);
-    res = this.interpolator.interpolate(res, data, options.lng || this.language);
+      // interpolate
+      var data = options.replace && typeof options.replace !== 'string' ? options.replace : options;
+      if (this.options.interpolation.defaultVariables) data = _extends({}, this.options.interpolation.defaultVariables, data);
+      res = this.interpolator.interpolate(res, data, options.lng || this.language);
 
-    // nesting
-    if (options.nest !== false) res = this.interpolator.nest(res, function () {
-      return _this3.translate.apply(_this3, arguments);
-    }, options);
+      // nesting
+      if (options.nest !== false) res = this.interpolator.nest(res, function () {
+        return _this3.translate.apply(_this3, arguments);
+      }, options);
 
-    if (options.interpolation) this.interpolator.reset();
+      if (options.interpolation) this.interpolator.reset();
+    }
 
     // post process
     var postProcess = options.postProcess || this.options.postProcess;
@@ -27949,6 +28006,8 @@ var Translator = function (_EventEmitter) {
 
     var found = void 0;
     var usedKey = void 0;
+    var usedLng = void 0;
+    var usedNS = void 0;
 
     if (typeof keys === 'string') keys = [keys];
 
@@ -27968,24 +28027,30 @@ var Translator = function (_EventEmitter) {
 
       namespaces.forEach(function (ns) {
         if (_this4.isValidLookup(found)) return;
+        usedNS = ns;
 
         codes.forEach(function (code) {
           if (_this4.isValidLookup(found)) return;
+          usedLng = code;
 
           var finalKey = key;
           var finalKeys = [finalKey];
 
-          var pluralSuffix = void 0;
-          if (needsPluralHandling) pluralSuffix = _this4.pluralResolver.getSuffix(code, options.count);
+          if (_this4.i18nFormat && _this4.i18nFormat.addLookupKeys) {
+            _this4.i18nFormat.addLookupKeys(finalKeys, key, code, ns, options);
+          } else {
+            var pluralSuffix = void 0;
+            if (needsPluralHandling) pluralSuffix = _this4.pluralResolver.getSuffix(code, options.count);
 
-          // fallback for plural if context not found
-          if (needsPluralHandling && needsContextHandling) finalKeys.push(finalKey + pluralSuffix);
+            // fallback for plural if context not found
+            if (needsPluralHandling && needsContextHandling) finalKeys.push(finalKey + pluralSuffix);
 
-          // get key for context if needed
-          if (needsContextHandling) finalKeys.push(finalKey += '' + _this4.options.contextSeparator + options.context);
+            // get key for context if needed
+            if (needsContextHandling) finalKeys.push(finalKey += '' + _this4.options.contextSeparator + options.context);
 
-          // get key for plural if needed
-          if (needsPluralHandling) finalKeys.push(finalKey += pluralSuffix);
+            // get key for plural if needed
+            if (needsPluralHandling) finalKeys.push(finalKey += pluralSuffix);
+          }
 
           // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
           var possibleKey = void 0;
@@ -27999,7 +28064,7 @@ var Translator = function (_EventEmitter) {
       });
     });
 
-    return { res: found, usedKey: usedKey };
+    return { res: found, usedKey: usedKey, usedLng: usedLng, usedNS: usedNS };
   };
 
   Translator.prototype.isValidLookup = function isValidLookup(res) {
@@ -28016,7 +28081,7 @@ var Translator = function (_EventEmitter) {
 }(_EventEmitter3.default);
 
 exports.default = Translator;
-},{"./EventEmitter.js":66,"./logger.js":75,"./postProcessor.js":76,"./utils.js":77}],72:[function(_dereq_,module,exports){
+},{"./EventEmitter.js":65,"./logger.js":74,"./postProcessor.js":75,"./utils.js":76}],71:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28105,7 +28170,7 @@ function transformOptions(options) {
 
   return options;
 }
-},{}],73:[function(_dereq_,module,exports){
+},{}],72:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28147,10 +28212,6 @@ var _Interpolator2 = _interopRequireDefault(_Interpolator);
 var _BackendConnector = _dereq_('./BackendConnector.js');
 
 var _BackendConnector2 = _interopRequireDefault(_BackendConnector);
-
-var _CacheConnector = _dereq_('./CacheConnector.js');
-
-var _CacheConnector2 = _interopRequireDefault(_CacheConnector);
 
 var _defaults2 = _dereq_('./defaults.js');
 
@@ -28233,9 +28294,6 @@ var I18n = function (_EventEmitter) {
       var s = this.services;
       s.logger = _logger2.default;
       s.resourceStore = this.store;
-      s.resourceStore.on('added removed', function (lng, ns) {
-        s.cacheConnector.save();
-      });
       s.languageUtils = lu;
       s.pluralResolver = new _PluralResolver2.default(lu, { prepend: this.options.pluralSeparator, compatibilityJSON: this.options.compatibilityJSON, simplifyPluralSuffix: this.options.simplifyPluralSuffix });
       s.interpolator = new _Interpolator2.default(this.options);
@@ -28250,30 +28308,21 @@ var I18n = function (_EventEmitter) {
         _this2.emit.apply(_this2, [event].concat(args));
       });
 
-      s.backendConnector.on('loaded', function (loaded) {
-        s.cacheConnector.save();
-      });
-
-      s.cacheConnector = new _CacheConnector2.default(createClassOnDemand(this.modules.cache), s.resourceStore, s, this.options);
-      // pipe events from backendConnector
-      s.cacheConnector.on('*', function (event) {
-        for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-          args[_key2 - 1] = arguments[_key2];
-        }
-
-        _this2.emit.apply(_this2, [event].concat(args));
-      });
-
       if (this.modules.languageDetector) {
         s.languageDetector = createClassOnDemand(this.modules.languageDetector);
         s.languageDetector.init(s, this.options.detection, this.options);
       }
 
+      if (this.modules.i18nFormat) {
+        s.i18nFormat = createClassOnDemand(this.modules.i18nFormat);
+        if (s.i18nFormat.init) s.i18nFormat.init(this);
+      }
+
       this.translator = new _Translator2.default(this.services, this.options);
       // pipe events from translator
       this.translator.on('*', function (event) {
-        for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-          args[_key3 - 1] = arguments[_key3];
+        for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+          args[_key2 - 1] = arguments[_key2];
         }
 
         _this2.emit.apply(_this2, [event].concat(args));
@@ -28350,9 +28399,7 @@ var I18n = function (_EventEmitter) {
         });
       }
 
-      this.services.cacheConnector.load(toLoad, this.options.ns, function () {
-        _this3.services.backendConnector.load(toLoad, _this3.options.ns, callback);
-      });
+      this.services.backendConnector.load(toLoad, this.options.ns, callback);
     } else {
       callback(null);
     }
@@ -28369,16 +28416,16 @@ var I18n = function (_EventEmitter) {
       this.modules.backend = module;
     }
 
-    if (module.type === 'cache') {
-      this.modules.cache = module;
-    }
-
     if (module.type === 'logger' || module.log && module.warn && module.error) {
       this.modules.logger = module;
     }
 
     if (module.type === 'languageDetector') {
       this.modules.languageDetector = module;
+    }
+
+    if (module.type === 'i18nFormat') {
+      this.modules.i18nFormat = module;
     }
 
     if (module.type === 'postProcessor') {
@@ -28435,8 +28482,8 @@ var I18n = function (_EventEmitter) {
     var _this5 = this;
 
     var fixedT = function fixedT(key, opts) {
-      for (var _len4 = arguments.length, rest = Array(_len4 > 2 ? _len4 - 2 : 0), _key4 = 2; _key4 < _len4; _key4++) {
-        rest[_key4 - 2] = arguments[_key4];
+      for (var _len3 = arguments.length, rest = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+        rest[_key3 - 2] = arguments[_key3];
       }
 
       var options = _extends({}, opts);
@@ -28534,8 +28581,8 @@ var I18n = function (_EventEmitter) {
     });
     clone.translator = new _Translator2.default(clone.services, clone.options);
     clone.translator.on('*', function (event) {
-      for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-        args[_key5 - 1] = arguments[_key5];
+      for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+        args[_key4 - 1] = arguments[_key4];
       }
 
       clone.emit.apply(clone, [event].concat(args));
@@ -28550,7 +28597,7 @@ var I18n = function (_EventEmitter) {
 }(_EventEmitter3.default);
 
 exports.default = new I18n();
-},{"./BackendConnector.js":64,"./CacheConnector.js":65,"./EventEmitter.js":66,"./Interpolator.js":67,"./LanguageUtils.js":68,"./PluralResolver.js":69,"./ResourceStore.js":70,"./Translator.js":71,"./defaults.js":72,"./logger.js":75,"./postProcessor.js":76}],74:[function(_dereq_,module,exports){
+},{"./BackendConnector.js":64,"./EventEmitter.js":65,"./Interpolator.js":66,"./LanguageUtils.js":67,"./PluralResolver.js":68,"./ResourceStore.js":69,"./Translator.js":70,"./defaults.js":71,"./logger.js":74,"./postProcessor.js":75}],73:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28580,7 +28627,7 @@ var on = exports.on = _i18next2.default.on.bind(_i18next2.default);
 var setDefaultNamespace = exports.setDefaultNamespace = _i18next2.default.setDefaultNamespace.bind(_i18next2.default);
 var t = exports.t = _i18next2.default.t.bind(_i18next2.default);
 var use = exports.use = _i18next2.default.use.bind(_i18next2.default);
-},{"./i18next.js":73}],75:[function(_dereq_,module,exports){
+},{"./i18next.js":72}],74:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28681,7 +28728,7 @@ var Logger = function () {
 }();
 
 exports.default = new Logger();
-},{}],76:[function(_dereq_,module,exports){
+},{}],75:[function(_dereq_,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28704,7 +28751,7 @@ exports.default = {
     return value;
   }
 };
-},{}],77:[function(_dereq_,module,exports){
+},{}],76:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28824,10 +28871,10 @@ function escape(data) {
 
   return data;
 }
-},{}],78:[function(_dereq_,module,exports){
+},{}],77:[function(_dereq_,module,exports){
 module.exports = _dereq_('./dist/commonjs/index.js').default;
 
-},{"./dist/commonjs/index.js":74}],79:[function(_dereq_,module,exports){
+},{"./dist/commonjs/index.js":73}],78:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative'),
     root = _dereq_('./_root');
 
@@ -28836,7 +28883,7 @@ var DataView = getNative(root, 'DataView');
 
 module.exports = DataView;
 
-},{"./_getNative":163,"./_root":206}],80:[function(_dereq_,module,exports){
+},{"./_getNative":162,"./_root":205}],79:[function(_dereq_,module,exports){
 var hashClear = _dereq_('./_hashClear'),
     hashDelete = _dereq_('./_hashDelete'),
     hashGet = _dereq_('./_hashGet'),
@@ -28870,7 +28917,7 @@ Hash.prototype.set = hashSet;
 
 module.exports = Hash;
 
-},{"./_hashClear":171,"./_hashDelete":172,"./_hashGet":173,"./_hashHas":174,"./_hashSet":175}],81:[function(_dereq_,module,exports){
+},{"./_hashClear":170,"./_hashDelete":171,"./_hashGet":172,"./_hashHas":173,"./_hashSet":174}],80:[function(_dereq_,module,exports){
 var listCacheClear = _dereq_('./_listCacheClear'),
     listCacheDelete = _dereq_('./_listCacheDelete'),
     listCacheGet = _dereq_('./_listCacheGet'),
@@ -28904,7 +28951,7 @@ ListCache.prototype.set = listCacheSet;
 
 module.exports = ListCache;
 
-},{"./_listCacheClear":186,"./_listCacheDelete":187,"./_listCacheGet":188,"./_listCacheHas":189,"./_listCacheSet":190}],82:[function(_dereq_,module,exports){
+},{"./_listCacheClear":185,"./_listCacheDelete":186,"./_listCacheGet":187,"./_listCacheHas":188,"./_listCacheSet":189}],81:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative'),
     root = _dereq_('./_root');
 
@@ -28913,7 +28960,7 @@ var Map = getNative(root, 'Map');
 
 module.exports = Map;
 
-},{"./_getNative":163,"./_root":206}],83:[function(_dereq_,module,exports){
+},{"./_getNative":162,"./_root":205}],82:[function(_dereq_,module,exports){
 var mapCacheClear = _dereq_('./_mapCacheClear'),
     mapCacheDelete = _dereq_('./_mapCacheDelete'),
     mapCacheGet = _dereq_('./_mapCacheGet'),
@@ -28947,7 +28994,7 @@ MapCache.prototype.set = mapCacheSet;
 
 module.exports = MapCache;
 
-},{"./_mapCacheClear":191,"./_mapCacheDelete":192,"./_mapCacheGet":193,"./_mapCacheHas":194,"./_mapCacheSet":195}],84:[function(_dereq_,module,exports){
+},{"./_mapCacheClear":190,"./_mapCacheDelete":191,"./_mapCacheGet":192,"./_mapCacheHas":193,"./_mapCacheSet":194}],83:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative'),
     root = _dereq_('./_root');
 
@@ -28956,7 +29003,7 @@ var Promise = getNative(root, 'Promise');
 
 module.exports = Promise;
 
-},{"./_getNative":163,"./_root":206}],85:[function(_dereq_,module,exports){
+},{"./_getNative":162,"./_root":205}],84:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative'),
     root = _dereq_('./_root');
 
@@ -28965,7 +29012,7 @@ var Set = getNative(root, 'Set');
 
 module.exports = Set;
 
-},{"./_getNative":163,"./_root":206}],86:[function(_dereq_,module,exports){
+},{"./_getNative":162,"./_root":205}],85:[function(_dereq_,module,exports){
 var MapCache = _dereq_('./_MapCache'),
     setCacheAdd = _dereq_('./_setCacheAdd'),
     setCacheHas = _dereq_('./_setCacheHas');
@@ -28994,7 +29041,7 @@ SetCache.prototype.has = setCacheHas;
 
 module.exports = SetCache;
 
-},{"./_MapCache":83,"./_setCacheAdd":208,"./_setCacheHas":209}],87:[function(_dereq_,module,exports){
+},{"./_MapCache":82,"./_setCacheAdd":207,"./_setCacheHas":208}],86:[function(_dereq_,module,exports){
 var ListCache = _dereq_('./_ListCache'),
     stackClear = _dereq_('./_stackClear'),
     stackDelete = _dereq_('./_stackDelete'),
@@ -29023,7 +29070,7 @@ Stack.prototype.set = stackSet;
 
 module.exports = Stack;
 
-},{"./_ListCache":81,"./_stackClear":213,"./_stackDelete":214,"./_stackGet":215,"./_stackHas":216,"./_stackSet":217}],88:[function(_dereq_,module,exports){
+},{"./_ListCache":80,"./_stackClear":212,"./_stackDelete":213,"./_stackGet":214,"./_stackHas":215,"./_stackSet":216}],87:[function(_dereq_,module,exports){
 var root = _dereq_('./_root');
 
 /** Built-in value references. */
@@ -29031,7 +29078,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":206}],89:[function(_dereq_,module,exports){
+},{"./_root":205}],88:[function(_dereq_,module,exports){
 var root = _dereq_('./_root');
 
 /** Built-in value references. */
@@ -29039,7 +29086,7 @@ var Uint8Array = root.Uint8Array;
 
 module.exports = Uint8Array;
 
-},{"./_root":206}],90:[function(_dereq_,module,exports){
+},{"./_root":205}],89:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative'),
     root = _dereq_('./_root');
 
@@ -29048,7 +29095,7 @@ var WeakMap = getNative(root, 'WeakMap');
 
 module.exports = WeakMap;
 
-},{"./_getNative":163,"./_root":206}],91:[function(_dereq_,module,exports){
+},{"./_getNative":162,"./_root":205}],90:[function(_dereq_,module,exports){
 /**
  * A faster alternative to `Function#apply`, this function invokes `func`
  * with the `this` binding of `thisArg` and the arguments of `args`.
@@ -29071,7 +29118,7 @@ function apply(func, thisArg, args) {
 
 module.exports = apply;
 
-},{}],92:[function(_dereq_,module,exports){
+},{}],91:[function(_dereq_,module,exports){
 /**
  * A specialized version of `_.forEach` for arrays without support for
  * iteratee shorthands.
@@ -29095,7 +29142,7 @@ function arrayEach(array, iteratee) {
 
 module.exports = arrayEach;
 
-},{}],93:[function(_dereq_,module,exports){
+},{}],92:[function(_dereq_,module,exports){
 /**
  * A specialized version of `_.filter` for arrays without support for
  * iteratee shorthands.
@@ -29122,7 +29169,7 @@ function arrayFilter(array, predicate) {
 
 module.exports = arrayFilter;
 
-},{}],94:[function(_dereq_,module,exports){
+},{}],93:[function(_dereq_,module,exports){
 var baseTimes = _dereq_('./_baseTimes'),
     isArguments = _dereq_('./isArguments'),
     isArray = _dereq_('./isArray'),
@@ -29173,7 +29220,7 @@ function arrayLikeKeys(value, inherited) {
 
 module.exports = arrayLikeKeys;
 
-},{"./_baseTimes":135,"./_isIndex":179,"./isArguments":229,"./isArray":230,"./isBuffer":233,"./isTypedArray":248}],95:[function(_dereq_,module,exports){
+},{"./_baseTimes":134,"./_isIndex":178,"./isArguments":228,"./isArray":229,"./isBuffer":232,"./isTypedArray":247}],94:[function(_dereq_,module,exports){
 /**
  * A specialized version of `_.map` for arrays without support for iteratee
  * shorthands.
@@ -29196,7 +29243,7 @@ function arrayMap(array, iteratee) {
 
 module.exports = arrayMap;
 
-},{}],96:[function(_dereq_,module,exports){
+},{}],95:[function(_dereq_,module,exports){
 /**
  * Appends the elements of `values` to `array`.
  *
@@ -29218,7 +29265,7 @@ function arrayPush(array, values) {
 
 module.exports = arrayPush;
 
-},{}],97:[function(_dereq_,module,exports){
+},{}],96:[function(_dereq_,module,exports){
 /**
  * A specialized version of `_.some` for arrays without support for iteratee
  * shorthands.
@@ -29243,7 +29290,7 @@ function arraySome(array, predicate) {
 
 module.exports = arraySome;
 
-},{}],98:[function(_dereq_,module,exports){
+},{}],97:[function(_dereq_,module,exports){
 var baseAssignValue = _dereq_('./_baseAssignValue'),
     eq = _dereq_('./eq');
 
@@ -29265,7 +29312,7 @@ function assignMergeValue(object, key, value) {
 
 module.exports = assignMergeValue;
 
-},{"./_baseAssignValue":103,"./eq":224}],99:[function(_dereq_,module,exports){
+},{"./_baseAssignValue":102,"./eq":223}],98:[function(_dereq_,module,exports){
 var baseAssignValue = _dereq_('./_baseAssignValue'),
     eq = _dereq_('./eq');
 
@@ -29295,7 +29342,7 @@ function assignValue(object, key, value) {
 
 module.exports = assignValue;
 
-},{"./_baseAssignValue":103,"./eq":224}],100:[function(_dereq_,module,exports){
+},{"./_baseAssignValue":102,"./eq":223}],99:[function(_dereq_,module,exports){
 var eq = _dereq_('./eq');
 
 /**
@@ -29318,7 +29365,7 @@ function assocIndexOf(array, key) {
 
 module.exports = assocIndexOf;
 
-},{"./eq":224}],101:[function(_dereq_,module,exports){
+},{"./eq":223}],100:[function(_dereq_,module,exports){
 var copyObject = _dereq_('./_copyObject'),
     keys = _dereq_('./keys');
 
@@ -29337,7 +29384,7 @@ function baseAssign(object, source) {
 
 module.exports = baseAssign;
 
-},{"./_copyObject":147,"./keys":249}],102:[function(_dereq_,module,exports){
+},{"./_copyObject":146,"./keys":248}],101:[function(_dereq_,module,exports){
 var copyObject = _dereq_('./_copyObject'),
     keysIn = _dereq_('./keysIn');
 
@@ -29356,7 +29403,7 @@ function baseAssignIn(object, source) {
 
 module.exports = baseAssignIn;
 
-},{"./_copyObject":147,"./keysIn":250}],103:[function(_dereq_,module,exports){
+},{"./_copyObject":146,"./keysIn":249}],102:[function(_dereq_,module,exports){
 var defineProperty = _dereq_('./_defineProperty');
 
 /**
@@ -29383,7 +29430,7 @@ function baseAssignValue(object, key, value) {
 
 module.exports = baseAssignValue;
 
-},{"./_defineProperty":154}],104:[function(_dereq_,module,exports){
+},{"./_defineProperty":153}],103:[function(_dereq_,module,exports){
 var Stack = _dereq_('./_Stack'),
     arrayEach = _dereq_('./_arrayEach'),
     assignValue = _dereq_('./_assignValue'),
@@ -29556,7 +29603,7 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
 
 module.exports = baseClone;
 
-},{"./_Stack":87,"./_arrayEach":92,"./_assignValue":99,"./_baseAssign":101,"./_baseAssignIn":102,"./_cloneBuffer":141,"./_copyArray":146,"./_copySymbols":148,"./_copySymbolsIn":149,"./_getAllKeys":159,"./_getAllKeysIn":160,"./_getTag":168,"./_initCloneArray":176,"./_initCloneByTag":177,"./_initCloneObject":178,"./isArray":230,"./isBuffer":233,"./isMap":239,"./isObject":243,"./isSet":246,"./keys":249}],105:[function(_dereq_,module,exports){
+},{"./_Stack":86,"./_arrayEach":91,"./_assignValue":98,"./_baseAssign":100,"./_baseAssignIn":101,"./_cloneBuffer":140,"./_copyArray":145,"./_copySymbols":147,"./_copySymbolsIn":148,"./_getAllKeys":158,"./_getAllKeysIn":159,"./_getTag":167,"./_initCloneArray":175,"./_initCloneByTag":176,"./_initCloneObject":177,"./isArray":229,"./isBuffer":232,"./isMap":238,"./isObject":242,"./isSet":245,"./keys":248}],104:[function(_dereq_,module,exports){
 var isObject = _dereq_('./isObject');
 
 /** Built-in value references. */
@@ -29588,7 +29635,7 @@ var baseCreate = (function() {
 
 module.exports = baseCreate;
 
-},{"./isObject":243}],106:[function(_dereq_,module,exports){
+},{"./isObject":242}],105:[function(_dereq_,module,exports){
 var baseForOwn = _dereq_('./_baseForOwn'),
     createBaseEach = _dereq_('./_createBaseEach');
 
@@ -29604,7 +29651,7 @@ var baseEach = createBaseEach(baseForOwn);
 
 module.exports = baseEach;
 
-},{"./_baseForOwn":109,"./_createBaseEach":152}],107:[function(_dereq_,module,exports){
+},{"./_baseForOwn":108,"./_createBaseEach":151}],106:[function(_dereq_,module,exports){
 var baseEach = _dereq_('./_baseEach');
 
 /**
@@ -29627,7 +29674,7 @@ function baseFilter(collection, predicate) {
 
 module.exports = baseFilter;
 
-},{"./_baseEach":106}],108:[function(_dereq_,module,exports){
+},{"./_baseEach":105}],107:[function(_dereq_,module,exports){
 var createBaseFor = _dereq_('./_createBaseFor');
 
 /**
@@ -29645,7 +29692,7 @@ var baseFor = createBaseFor();
 
 module.exports = baseFor;
 
-},{"./_createBaseFor":153}],109:[function(_dereq_,module,exports){
+},{"./_createBaseFor":152}],108:[function(_dereq_,module,exports){
 var baseFor = _dereq_('./_baseFor'),
     keys = _dereq_('./keys');
 
@@ -29663,7 +29710,7 @@ function baseForOwn(object, iteratee) {
 
 module.exports = baseForOwn;
 
-},{"./_baseFor":108,"./keys":249}],110:[function(_dereq_,module,exports){
+},{"./_baseFor":107,"./keys":248}],109:[function(_dereq_,module,exports){
 var castPath = _dereq_('./_castPath'),
     toKey = _dereq_('./_toKey');
 
@@ -29689,7 +29736,7 @@ function baseGet(object, path) {
 
 module.exports = baseGet;
 
-},{"./_castPath":139,"./_toKey":219}],111:[function(_dereq_,module,exports){
+},{"./_castPath":138,"./_toKey":218}],110:[function(_dereq_,module,exports){
 var arrayPush = _dereq_('./_arrayPush'),
     isArray = _dereq_('./isArray');
 
@@ -29711,7 +29758,7 @@ function baseGetAllKeys(object, keysFunc, symbolsFunc) {
 
 module.exports = baseGetAllKeys;
 
-},{"./_arrayPush":96,"./isArray":230}],112:[function(_dereq_,module,exports){
+},{"./_arrayPush":95,"./isArray":229}],111:[function(_dereq_,module,exports){
 var Symbol = _dereq_('./_Symbol'),
     getRawTag = _dereq_('./_getRawTag'),
     objectToString = _dereq_('./_objectToString');
@@ -29741,7 +29788,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":88,"./_getRawTag":165,"./_objectToString":203}],113:[function(_dereq_,module,exports){
+},{"./_Symbol":87,"./_getRawTag":164,"./_objectToString":202}],112:[function(_dereq_,module,exports){
 /**
  * The base implementation of `_.hasIn` without support for deep paths.
  *
@@ -29756,7 +29803,7 @@ function baseHasIn(object, key) {
 
 module.exports = baseHasIn;
 
-},{}],114:[function(_dereq_,module,exports){
+},{}],113:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -29776,7 +29823,7 @@ function baseIsArguments(value) {
 
 module.exports = baseIsArguments;
 
-},{"./_baseGetTag":112,"./isObjectLike":244}],115:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./isObjectLike":243}],114:[function(_dereq_,module,exports){
 var baseIsEqualDeep = _dereq_('./_baseIsEqualDeep'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -29806,7 +29853,7 @@ function baseIsEqual(value, other, bitmask, customizer, stack) {
 
 module.exports = baseIsEqual;
 
-},{"./_baseIsEqualDeep":116,"./isObjectLike":244}],116:[function(_dereq_,module,exports){
+},{"./_baseIsEqualDeep":115,"./isObjectLike":243}],115:[function(_dereq_,module,exports){
 var Stack = _dereq_('./_Stack'),
     equalArrays = _dereq_('./_equalArrays'),
     equalByTag = _dereq_('./_equalByTag'),
@@ -29891,7 +29938,7 @@ function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
 
 module.exports = baseIsEqualDeep;
 
-},{"./_Stack":87,"./_equalArrays":155,"./_equalByTag":156,"./_equalObjects":157,"./_getTag":168,"./isArray":230,"./isBuffer":233,"./isTypedArray":248}],117:[function(_dereq_,module,exports){
+},{"./_Stack":86,"./_equalArrays":154,"./_equalByTag":155,"./_equalObjects":156,"./_getTag":167,"./isArray":229,"./isBuffer":232,"./isTypedArray":247}],116:[function(_dereq_,module,exports){
 var getTag = _dereq_('./_getTag'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -29911,7 +29958,7 @@ function baseIsMap(value) {
 
 module.exports = baseIsMap;
 
-},{"./_getTag":168,"./isObjectLike":244}],118:[function(_dereq_,module,exports){
+},{"./_getTag":167,"./isObjectLike":243}],117:[function(_dereq_,module,exports){
 var Stack = _dereq_('./_Stack'),
     baseIsEqual = _dereq_('./_baseIsEqual');
 
@@ -29975,7 +30022,7 @@ function baseIsMatch(object, source, matchData, customizer) {
 
 module.exports = baseIsMatch;
 
-},{"./_Stack":87,"./_baseIsEqual":115}],119:[function(_dereq_,module,exports){
+},{"./_Stack":86,"./_baseIsEqual":114}],118:[function(_dereq_,module,exports){
 var isFunction = _dereq_('./isFunction'),
     isMasked = _dereq_('./_isMasked'),
     isObject = _dereq_('./isObject'),
@@ -30024,7 +30071,7 @@ function baseIsNative(value) {
 
 module.exports = baseIsNative;
 
-},{"./_isMasked":183,"./_toSource":220,"./isFunction":237,"./isObject":243}],120:[function(_dereq_,module,exports){
+},{"./_isMasked":182,"./_toSource":219,"./isFunction":236,"./isObject":242}],119:[function(_dereq_,module,exports){
 var getTag = _dereq_('./_getTag'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -30044,7 +30091,7 @@ function baseIsSet(value) {
 
 module.exports = baseIsSet;
 
-},{"./_getTag":168,"./isObjectLike":244}],121:[function(_dereq_,module,exports){
+},{"./_getTag":167,"./isObjectLike":243}],120:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     isLength = _dereq_('./isLength'),
     isObjectLike = _dereq_('./isObjectLike');
@@ -30106,7 +30153,7 @@ function baseIsTypedArray(value) {
 
 module.exports = baseIsTypedArray;
 
-},{"./_baseGetTag":112,"./isLength":238,"./isObjectLike":244}],122:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./isLength":237,"./isObjectLike":243}],121:[function(_dereq_,module,exports){
 var baseMatches = _dereq_('./_baseMatches'),
     baseMatchesProperty = _dereq_('./_baseMatchesProperty'),
     identity = _dereq_('./identity'),
@@ -30139,7 +30186,7 @@ function baseIteratee(value) {
 
 module.exports = baseIteratee;
 
-},{"./_baseMatches":126,"./_baseMatchesProperty":127,"./identity":228,"./isArray":230,"./property":256}],123:[function(_dereq_,module,exports){
+},{"./_baseMatches":125,"./_baseMatchesProperty":126,"./identity":227,"./isArray":229,"./property":255}],122:[function(_dereq_,module,exports){
 var isPrototype = _dereq_('./_isPrototype'),
     nativeKeys = _dereq_('./_nativeKeys');
 
@@ -30171,7 +30218,7 @@ function baseKeys(object) {
 
 module.exports = baseKeys;
 
-},{"./_isPrototype":184,"./_nativeKeys":200}],124:[function(_dereq_,module,exports){
+},{"./_isPrototype":183,"./_nativeKeys":199}],123:[function(_dereq_,module,exports){
 var isObject = _dereq_('./isObject'),
     isPrototype = _dereq_('./_isPrototype'),
     nativeKeysIn = _dereq_('./_nativeKeysIn');
@@ -30206,7 +30253,7 @@ function baseKeysIn(object) {
 
 module.exports = baseKeysIn;
 
-},{"./_isPrototype":184,"./_nativeKeysIn":201,"./isObject":243}],125:[function(_dereq_,module,exports){
+},{"./_isPrototype":183,"./_nativeKeysIn":200,"./isObject":242}],124:[function(_dereq_,module,exports){
 var baseEach = _dereq_('./_baseEach'),
     isArrayLike = _dereq_('./isArrayLike');
 
@@ -30230,7 +30277,7 @@ function baseMap(collection, iteratee) {
 
 module.exports = baseMap;
 
-},{"./_baseEach":106,"./isArrayLike":231}],126:[function(_dereq_,module,exports){
+},{"./_baseEach":105,"./isArrayLike":230}],125:[function(_dereq_,module,exports){
 var baseIsMatch = _dereq_('./_baseIsMatch'),
     getMatchData = _dereq_('./_getMatchData'),
     matchesStrictComparable = _dereq_('./_matchesStrictComparable');
@@ -30254,7 +30301,7 @@ function baseMatches(source) {
 
 module.exports = baseMatches;
 
-},{"./_baseIsMatch":118,"./_getMatchData":162,"./_matchesStrictComparable":197}],127:[function(_dereq_,module,exports){
+},{"./_baseIsMatch":117,"./_getMatchData":161,"./_matchesStrictComparable":196}],126:[function(_dereq_,module,exports){
 var baseIsEqual = _dereq_('./_baseIsEqual'),
     get = _dereq_('./get'),
     hasIn = _dereq_('./hasIn'),
@@ -30289,7 +30336,7 @@ function baseMatchesProperty(path, srcValue) {
 
 module.exports = baseMatchesProperty;
 
-},{"./_baseIsEqual":115,"./_isKey":181,"./_isStrictComparable":185,"./_matchesStrictComparable":197,"./_toKey":219,"./get":226,"./hasIn":227}],128:[function(_dereq_,module,exports){
+},{"./_baseIsEqual":114,"./_isKey":180,"./_isStrictComparable":184,"./_matchesStrictComparable":196,"./_toKey":218,"./get":225,"./hasIn":226}],127:[function(_dereq_,module,exports){
 var Stack = _dereq_('./_Stack'),
     assignMergeValue = _dereq_('./_assignMergeValue'),
     baseFor = _dereq_('./_baseFor'),
@@ -30333,7 +30380,7 @@ function baseMerge(object, source, srcIndex, customizer, stack) {
 
 module.exports = baseMerge;
 
-},{"./_Stack":87,"./_assignMergeValue":98,"./_baseFor":108,"./_baseMergeDeep":129,"./_safeGet":207,"./isObject":243,"./keysIn":250}],129:[function(_dereq_,module,exports){
+},{"./_Stack":86,"./_assignMergeValue":97,"./_baseFor":107,"./_baseMergeDeep":128,"./_safeGet":206,"./isObject":242,"./keysIn":249}],128:[function(_dereq_,module,exports){
 var assignMergeValue = _dereq_('./_assignMergeValue'),
     cloneBuffer = _dereq_('./_cloneBuffer'),
     cloneTypedArray = _dereq_('./_cloneTypedArray'),
@@ -30429,7 +30476,7 @@ function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, sta
 
 module.exports = baseMergeDeep;
 
-},{"./_assignMergeValue":98,"./_cloneBuffer":141,"./_cloneTypedArray":145,"./_copyArray":146,"./_initCloneObject":178,"./_safeGet":207,"./isArguments":229,"./isArray":230,"./isArrayLikeObject":232,"./isBuffer":233,"./isFunction":237,"./isObject":243,"./isPlainObject":245,"./isTypedArray":248,"./toPlainObject":260}],130:[function(_dereq_,module,exports){
+},{"./_assignMergeValue":97,"./_cloneBuffer":140,"./_cloneTypedArray":144,"./_copyArray":145,"./_initCloneObject":177,"./_safeGet":206,"./isArguments":228,"./isArray":229,"./isArrayLikeObject":231,"./isBuffer":232,"./isFunction":236,"./isObject":242,"./isPlainObject":244,"./isTypedArray":247,"./toPlainObject":259}],129:[function(_dereq_,module,exports){
 /**
  * The base implementation of `_.property` without support for deep paths.
  *
@@ -30445,7 +30492,7 @@ function baseProperty(key) {
 
 module.exports = baseProperty;
 
-},{}],131:[function(_dereq_,module,exports){
+},{}],130:[function(_dereq_,module,exports){
 var baseGet = _dereq_('./_baseGet');
 
 /**
@@ -30463,7 +30510,7 @@ function basePropertyDeep(path) {
 
 module.exports = basePropertyDeep;
 
-},{"./_baseGet":110}],132:[function(_dereq_,module,exports){
+},{"./_baseGet":109}],131:[function(_dereq_,module,exports){
 var identity = _dereq_('./identity'),
     overRest = _dereq_('./_overRest'),
     setToString = _dereq_('./_setToString');
@@ -30482,7 +30529,7 @@ function baseRest(func, start) {
 
 module.exports = baseRest;
 
-},{"./_overRest":205,"./_setToString":211,"./identity":228}],133:[function(_dereq_,module,exports){
+},{"./_overRest":204,"./_setToString":210,"./identity":227}],132:[function(_dereq_,module,exports){
 var assignValue = _dereq_('./_assignValue'),
     castPath = _dereq_('./_castPath'),
     isIndex = _dereq_('./_isIndex'),
@@ -30531,7 +30578,7 @@ function baseSet(object, path, value, customizer) {
 
 module.exports = baseSet;
 
-},{"./_assignValue":99,"./_castPath":139,"./_isIndex":179,"./_toKey":219,"./isObject":243}],134:[function(_dereq_,module,exports){
+},{"./_assignValue":98,"./_castPath":138,"./_isIndex":178,"./_toKey":218,"./isObject":242}],133:[function(_dereq_,module,exports){
 var constant = _dereq_('./constant'),
     defineProperty = _dereq_('./_defineProperty'),
     identity = _dereq_('./identity');
@@ -30555,7 +30602,7 @@ var baseSetToString = !defineProperty ? identity : function(func, string) {
 
 module.exports = baseSetToString;
 
-},{"./_defineProperty":154,"./constant":223,"./identity":228}],135:[function(_dereq_,module,exports){
+},{"./_defineProperty":153,"./constant":222,"./identity":227}],134:[function(_dereq_,module,exports){
 /**
  * The base implementation of `_.times` without support for iteratee shorthands
  * or max array length checks.
@@ -30577,7 +30624,7 @@ function baseTimes(n, iteratee) {
 
 module.exports = baseTimes;
 
-},{}],136:[function(_dereq_,module,exports){
+},{}],135:[function(_dereq_,module,exports){
 var Symbol = _dereq_('./_Symbol'),
     arrayMap = _dereq_('./_arrayMap'),
     isArray = _dereq_('./isArray'),
@@ -30616,7 +30663,7 @@ function baseToString(value) {
 
 module.exports = baseToString;
 
-},{"./_Symbol":88,"./_arrayMap":95,"./isArray":230,"./isSymbol":247}],137:[function(_dereq_,module,exports){
+},{"./_Symbol":87,"./_arrayMap":94,"./isArray":229,"./isSymbol":246}],136:[function(_dereq_,module,exports){
 /**
  * The base implementation of `_.unary` without support for storing metadata.
  *
@@ -30632,7 +30679,7 @@ function baseUnary(func) {
 
 module.exports = baseUnary;
 
-},{}],138:[function(_dereq_,module,exports){
+},{}],137:[function(_dereq_,module,exports){
 /**
  * Checks if a `cache` value for `key` exists.
  *
@@ -30647,7 +30694,7 @@ function cacheHas(cache, key) {
 
 module.exports = cacheHas;
 
-},{}],139:[function(_dereq_,module,exports){
+},{}],138:[function(_dereq_,module,exports){
 var isArray = _dereq_('./isArray'),
     isKey = _dereq_('./_isKey'),
     stringToPath = _dereq_('./_stringToPath'),
@@ -30670,7 +30717,7 @@ function castPath(value, object) {
 
 module.exports = castPath;
 
-},{"./_isKey":181,"./_stringToPath":218,"./isArray":230,"./toString":261}],140:[function(_dereq_,module,exports){
+},{"./_isKey":180,"./_stringToPath":217,"./isArray":229,"./toString":260}],139:[function(_dereq_,module,exports){
 var Uint8Array = _dereq_('./_Uint8Array');
 
 /**
@@ -30688,7 +30735,7 @@ function cloneArrayBuffer(arrayBuffer) {
 
 module.exports = cloneArrayBuffer;
 
-},{"./_Uint8Array":89}],141:[function(_dereq_,module,exports){
+},{"./_Uint8Array":88}],140:[function(_dereq_,module,exports){
 var root = _dereq_('./_root');
 
 /** Detect free variable `exports`. */
@@ -30725,7 +30772,7 @@ function cloneBuffer(buffer, isDeep) {
 
 module.exports = cloneBuffer;
 
-},{"./_root":206}],142:[function(_dereq_,module,exports){
+},{"./_root":205}],141:[function(_dereq_,module,exports){
 var cloneArrayBuffer = _dereq_('./_cloneArrayBuffer');
 
 /**
@@ -30743,7 +30790,7 @@ function cloneDataView(dataView, isDeep) {
 
 module.exports = cloneDataView;
 
-},{"./_cloneArrayBuffer":140}],143:[function(_dereq_,module,exports){
+},{"./_cloneArrayBuffer":139}],142:[function(_dereq_,module,exports){
 /** Used to match `RegExp` flags from their coerced string values. */
 var reFlags = /\w*$/;
 
@@ -30762,7 +30809,7 @@ function cloneRegExp(regexp) {
 
 module.exports = cloneRegExp;
 
-},{}],144:[function(_dereq_,module,exports){
+},{}],143:[function(_dereq_,module,exports){
 var Symbol = _dereq_('./_Symbol');
 
 /** Used to convert symbols to primitives and strings. */
@@ -30782,7 +30829,7 @@ function cloneSymbol(symbol) {
 
 module.exports = cloneSymbol;
 
-},{"./_Symbol":88}],145:[function(_dereq_,module,exports){
+},{"./_Symbol":87}],144:[function(_dereq_,module,exports){
 var cloneArrayBuffer = _dereq_('./_cloneArrayBuffer');
 
 /**
@@ -30800,7 +30847,7 @@ function cloneTypedArray(typedArray, isDeep) {
 
 module.exports = cloneTypedArray;
 
-},{"./_cloneArrayBuffer":140}],146:[function(_dereq_,module,exports){
+},{"./_cloneArrayBuffer":139}],145:[function(_dereq_,module,exports){
 /**
  * Copies the values of `source` to `array`.
  *
@@ -30822,7 +30869,7 @@ function copyArray(source, array) {
 
 module.exports = copyArray;
 
-},{}],147:[function(_dereq_,module,exports){
+},{}],146:[function(_dereq_,module,exports){
 var assignValue = _dereq_('./_assignValue'),
     baseAssignValue = _dereq_('./_baseAssignValue');
 
@@ -30864,7 +30911,7 @@ function copyObject(source, props, object, customizer) {
 
 module.exports = copyObject;
 
-},{"./_assignValue":99,"./_baseAssignValue":103}],148:[function(_dereq_,module,exports){
+},{"./_assignValue":98,"./_baseAssignValue":102}],147:[function(_dereq_,module,exports){
 var copyObject = _dereq_('./_copyObject'),
     getSymbols = _dereq_('./_getSymbols');
 
@@ -30882,7 +30929,7 @@ function copySymbols(source, object) {
 
 module.exports = copySymbols;
 
-},{"./_copyObject":147,"./_getSymbols":166}],149:[function(_dereq_,module,exports){
+},{"./_copyObject":146,"./_getSymbols":165}],148:[function(_dereq_,module,exports){
 var copyObject = _dereq_('./_copyObject'),
     getSymbolsIn = _dereq_('./_getSymbolsIn');
 
@@ -30900,7 +30947,7 @@ function copySymbolsIn(source, object) {
 
 module.exports = copySymbolsIn;
 
-},{"./_copyObject":147,"./_getSymbolsIn":167}],150:[function(_dereq_,module,exports){
+},{"./_copyObject":146,"./_getSymbolsIn":166}],149:[function(_dereq_,module,exports){
 var root = _dereq_('./_root');
 
 /** Used to detect overreaching core-js shims. */
@@ -30908,7 +30955,7 @@ var coreJsData = root['__core-js_shared__'];
 
 module.exports = coreJsData;
 
-},{"./_root":206}],151:[function(_dereq_,module,exports){
+},{"./_root":205}],150:[function(_dereq_,module,exports){
 var baseRest = _dereq_('./_baseRest'),
     isIterateeCall = _dereq_('./_isIterateeCall');
 
@@ -30947,7 +30994,7 @@ function createAssigner(assigner) {
 
 module.exports = createAssigner;
 
-},{"./_baseRest":132,"./_isIterateeCall":180}],152:[function(_dereq_,module,exports){
+},{"./_baseRest":131,"./_isIterateeCall":179}],151:[function(_dereq_,module,exports){
 var isArrayLike = _dereq_('./isArrayLike');
 
 /**
@@ -30981,7 +31028,7 @@ function createBaseEach(eachFunc, fromRight) {
 
 module.exports = createBaseEach;
 
-},{"./isArrayLike":231}],153:[function(_dereq_,module,exports){
+},{"./isArrayLike":230}],152:[function(_dereq_,module,exports){
 /**
  * Creates a base function for methods like `_.forIn` and `_.forOwn`.
  *
@@ -31008,7 +31055,7 @@ function createBaseFor(fromRight) {
 
 module.exports = createBaseFor;
 
-},{}],154:[function(_dereq_,module,exports){
+},{}],153:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative');
 
 var defineProperty = (function() {
@@ -31021,7 +31068,7 @@ var defineProperty = (function() {
 
 module.exports = defineProperty;
 
-},{"./_getNative":163}],155:[function(_dereq_,module,exports){
+},{"./_getNative":162}],154:[function(_dereq_,module,exports){
 var SetCache = _dereq_('./_SetCache'),
     arraySome = _dereq_('./_arraySome'),
     cacheHas = _dereq_('./_cacheHas');
@@ -31106,7 +31153,7 @@ function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
 
 module.exports = equalArrays;
 
-},{"./_SetCache":86,"./_arraySome":97,"./_cacheHas":138}],156:[function(_dereq_,module,exports){
+},{"./_SetCache":85,"./_arraySome":96,"./_cacheHas":137}],155:[function(_dereq_,module,exports){
 var Symbol = _dereq_('./_Symbol'),
     Uint8Array = _dereq_('./_Uint8Array'),
     eq = _dereq_('./eq'),
@@ -31220,7 +31267,7 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
 
 module.exports = equalByTag;
 
-},{"./_Symbol":88,"./_Uint8Array":89,"./_equalArrays":155,"./_mapToArray":196,"./_setToArray":210,"./eq":224}],157:[function(_dereq_,module,exports){
+},{"./_Symbol":87,"./_Uint8Array":88,"./_equalArrays":154,"./_mapToArray":195,"./_setToArray":209,"./eq":223}],156:[function(_dereq_,module,exports){
 var getAllKeys = _dereq_('./_getAllKeys');
 
 /** Used to compose bitmasks for value comparisons. */
@@ -31311,7 +31358,7 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
 
 module.exports = equalObjects;
 
-},{"./_getAllKeys":159}],158:[function(_dereq_,module,exports){
+},{"./_getAllKeys":158}],157:[function(_dereq_,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -31319,7 +31366,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],159:[function(_dereq_,module,exports){
+},{}],158:[function(_dereq_,module,exports){
 var baseGetAllKeys = _dereq_('./_baseGetAllKeys'),
     getSymbols = _dereq_('./_getSymbols'),
     keys = _dereq_('./keys');
@@ -31337,7 +31384,7 @@ function getAllKeys(object) {
 
 module.exports = getAllKeys;
 
-},{"./_baseGetAllKeys":111,"./_getSymbols":166,"./keys":249}],160:[function(_dereq_,module,exports){
+},{"./_baseGetAllKeys":110,"./_getSymbols":165,"./keys":248}],159:[function(_dereq_,module,exports){
 var baseGetAllKeys = _dereq_('./_baseGetAllKeys'),
     getSymbolsIn = _dereq_('./_getSymbolsIn'),
     keysIn = _dereq_('./keysIn');
@@ -31356,7 +31403,7 @@ function getAllKeysIn(object) {
 
 module.exports = getAllKeysIn;
 
-},{"./_baseGetAllKeys":111,"./_getSymbolsIn":167,"./keysIn":250}],161:[function(_dereq_,module,exports){
+},{"./_baseGetAllKeys":110,"./_getSymbolsIn":166,"./keysIn":249}],160:[function(_dereq_,module,exports){
 var isKeyable = _dereq_('./_isKeyable');
 
 /**
@@ -31376,7 +31423,7 @@ function getMapData(map, key) {
 
 module.exports = getMapData;
 
-},{"./_isKeyable":182}],162:[function(_dereq_,module,exports){
+},{"./_isKeyable":181}],161:[function(_dereq_,module,exports){
 var isStrictComparable = _dereq_('./_isStrictComparable'),
     keys = _dereq_('./keys');
 
@@ -31402,7 +31449,7 @@ function getMatchData(object) {
 
 module.exports = getMatchData;
 
-},{"./_isStrictComparable":185,"./keys":249}],163:[function(_dereq_,module,exports){
+},{"./_isStrictComparable":184,"./keys":248}],162:[function(_dereq_,module,exports){
 var baseIsNative = _dereq_('./_baseIsNative'),
     getValue = _dereq_('./_getValue');
 
@@ -31421,7 +31468,7 @@ function getNative(object, key) {
 
 module.exports = getNative;
 
-},{"./_baseIsNative":119,"./_getValue":169}],164:[function(_dereq_,module,exports){
+},{"./_baseIsNative":118,"./_getValue":168}],163:[function(_dereq_,module,exports){
 var overArg = _dereq_('./_overArg');
 
 /** Built-in value references. */
@@ -31429,7 +31476,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":204}],165:[function(_dereq_,module,exports){
+},{"./_overArg":203}],164:[function(_dereq_,module,exports){
 var Symbol = _dereq_('./_Symbol');
 
 /** Used for built-in method references. */
@@ -31477,7 +31524,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":88}],166:[function(_dereq_,module,exports){
+},{"./_Symbol":87}],165:[function(_dereq_,module,exports){
 var arrayFilter = _dereq_('./_arrayFilter'),
     stubArray = _dereq_('./stubArray');
 
@@ -31509,7 +31556,7 @@ var getSymbols = !nativeGetSymbols ? stubArray : function(object) {
 
 module.exports = getSymbols;
 
-},{"./_arrayFilter":93,"./stubArray":258}],167:[function(_dereq_,module,exports){
+},{"./_arrayFilter":92,"./stubArray":257}],166:[function(_dereq_,module,exports){
 var arrayPush = _dereq_('./_arrayPush'),
     getPrototype = _dereq_('./_getPrototype'),
     getSymbols = _dereq_('./_getSymbols'),
@@ -31536,7 +31583,7 @@ var getSymbolsIn = !nativeGetSymbols ? stubArray : function(object) {
 
 module.exports = getSymbolsIn;
 
-},{"./_arrayPush":96,"./_getPrototype":164,"./_getSymbols":166,"./stubArray":258}],168:[function(_dereq_,module,exports){
+},{"./_arrayPush":95,"./_getPrototype":163,"./_getSymbols":165,"./stubArray":257}],167:[function(_dereq_,module,exports){
 var DataView = _dereq_('./_DataView'),
     Map = _dereq_('./_Map'),
     Promise = _dereq_('./_Promise'),
@@ -31596,7 +31643,7 @@ if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag) ||
 
 module.exports = getTag;
 
-},{"./_DataView":79,"./_Map":82,"./_Promise":84,"./_Set":85,"./_WeakMap":90,"./_baseGetTag":112,"./_toSource":220}],169:[function(_dereq_,module,exports){
+},{"./_DataView":78,"./_Map":81,"./_Promise":83,"./_Set":84,"./_WeakMap":89,"./_baseGetTag":111,"./_toSource":219}],168:[function(_dereq_,module,exports){
 /**
  * Gets the value at `key` of `object`.
  *
@@ -31611,7 +31658,7 @@ function getValue(object, key) {
 
 module.exports = getValue;
 
-},{}],170:[function(_dereq_,module,exports){
+},{}],169:[function(_dereq_,module,exports){
 var castPath = _dereq_('./_castPath'),
     isArguments = _dereq_('./isArguments'),
     isArray = _dereq_('./isArray'),
@@ -31652,7 +31699,7 @@ function hasPath(object, path, hasFunc) {
 
 module.exports = hasPath;
 
-},{"./_castPath":139,"./_isIndex":179,"./_toKey":219,"./isArguments":229,"./isArray":230,"./isLength":238}],171:[function(_dereq_,module,exports){
+},{"./_castPath":138,"./_isIndex":178,"./_toKey":218,"./isArguments":228,"./isArray":229,"./isLength":237}],170:[function(_dereq_,module,exports){
 var nativeCreate = _dereq_('./_nativeCreate');
 
 /**
@@ -31669,7 +31716,7 @@ function hashClear() {
 
 module.exports = hashClear;
 
-},{"./_nativeCreate":199}],172:[function(_dereq_,module,exports){
+},{"./_nativeCreate":198}],171:[function(_dereq_,module,exports){
 /**
  * Removes `key` and its value from the hash.
  *
@@ -31688,7 +31735,7 @@ function hashDelete(key) {
 
 module.exports = hashDelete;
 
-},{}],173:[function(_dereq_,module,exports){
+},{}],172:[function(_dereq_,module,exports){
 var nativeCreate = _dereq_('./_nativeCreate');
 
 /** Used to stand-in for `undefined` hash values. */
@@ -31720,7 +31767,7 @@ function hashGet(key) {
 
 module.exports = hashGet;
 
-},{"./_nativeCreate":199}],174:[function(_dereq_,module,exports){
+},{"./_nativeCreate":198}],173:[function(_dereq_,module,exports){
 var nativeCreate = _dereq_('./_nativeCreate');
 
 /** Used for built-in method references. */
@@ -31745,7 +31792,7 @@ function hashHas(key) {
 
 module.exports = hashHas;
 
-},{"./_nativeCreate":199}],175:[function(_dereq_,module,exports){
+},{"./_nativeCreate":198}],174:[function(_dereq_,module,exports){
 var nativeCreate = _dereq_('./_nativeCreate');
 
 /** Used to stand-in for `undefined` hash values. */
@@ -31770,7 +31817,7 @@ function hashSet(key, value) {
 
 module.exports = hashSet;
 
-},{"./_nativeCreate":199}],176:[function(_dereq_,module,exports){
+},{"./_nativeCreate":198}],175:[function(_dereq_,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -31798,7 +31845,7 @@ function initCloneArray(array) {
 
 module.exports = initCloneArray;
 
-},{}],177:[function(_dereq_,module,exports){
+},{}],176:[function(_dereq_,module,exports){
 var cloneArrayBuffer = _dereq_('./_cloneArrayBuffer'),
     cloneDataView = _dereq_('./_cloneDataView'),
     cloneRegExp = _dereq_('./_cloneRegExp'),
@@ -31877,7 +31924,7 @@ function initCloneByTag(object, tag, isDeep) {
 
 module.exports = initCloneByTag;
 
-},{"./_cloneArrayBuffer":140,"./_cloneDataView":142,"./_cloneRegExp":143,"./_cloneSymbol":144,"./_cloneTypedArray":145}],178:[function(_dereq_,module,exports){
+},{"./_cloneArrayBuffer":139,"./_cloneDataView":141,"./_cloneRegExp":142,"./_cloneSymbol":143,"./_cloneTypedArray":144}],177:[function(_dereq_,module,exports){
 var baseCreate = _dereq_('./_baseCreate'),
     getPrototype = _dereq_('./_getPrototype'),
     isPrototype = _dereq_('./_isPrototype');
@@ -31897,7 +31944,7 @@ function initCloneObject(object) {
 
 module.exports = initCloneObject;
 
-},{"./_baseCreate":105,"./_getPrototype":164,"./_isPrototype":184}],179:[function(_dereq_,module,exports){
+},{"./_baseCreate":104,"./_getPrototype":163,"./_isPrototype":183}],178:[function(_dereq_,module,exports){
 /** Used as references for various `Number` constants. */
 var MAX_SAFE_INTEGER = 9007199254740991;
 
@@ -31924,7 +31971,7 @@ function isIndex(value, length) {
 
 module.exports = isIndex;
 
-},{}],180:[function(_dereq_,module,exports){
+},{}],179:[function(_dereq_,module,exports){
 var eq = _dereq_('./eq'),
     isArrayLike = _dereq_('./isArrayLike'),
     isIndex = _dereq_('./_isIndex'),
@@ -31956,7 +32003,7 @@ function isIterateeCall(value, index, object) {
 
 module.exports = isIterateeCall;
 
-},{"./_isIndex":179,"./eq":224,"./isArrayLike":231,"./isObject":243}],181:[function(_dereq_,module,exports){
+},{"./_isIndex":178,"./eq":223,"./isArrayLike":230,"./isObject":242}],180:[function(_dereq_,module,exports){
 var isArray = _dereq_('./isArray'),
     isSymbol = _dereq_('./isSymbol');
 
@@ -31987,7 +32034,7 @@ function isKey(value, object) {
 
 module.exports = isKey;
 
-},{"./isArray":230,"./isSymbol":247}],182:[function(_dereq_,module,exports){
+},{"./isArray":229,"./isSymbol":246}],181:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is suitable for use as unique object key.
  *
@@ -32004,7 +32051,7 @@ function isKeyable(value) {
 
 module.exports = isKeyable;
 
-},{}],183:[function(_dereq_,module,exports){
+},{}],182:[function(_dereq_,module,exports){
 var coreJsData = _dereq_('./_coreJsData');
 
 /** Used to detect methods masquerading as native. */
@@ -32026,7 +32073,7 @@ function isMasked(func) {
 
 module.exports = isMasked;
 
-},{"./_coreJsData":150}],184:[function(_dereq_,module,exports){
+},{"./_coreJsData":149}],183:[function(_dereq_,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -32046,7 +32093,7 @@ function isPrototype(value) {
 
 module.exports = isPrototype;
 
-},{}],185:[function(_dereq_,module,exports){
+},{}],184:[function(_dereq_,module,exports){
 var isObject = _dereq_('./isObject');
 
 /**
@@ -32063,7 +32110,7 @@ function isStrictComparable(value) {
 
 module.exports = isStrictComparable;
 
-},{"./isObject":243}],186:[function(_dereq_,module,exports){
+},{"./isObject":242}],185:[function(_dereq_,module,exports){
 /**
  * Removes all key-value entries from the list cache.
  *
@@ -32078,7 +32125,7 @@ function listCacheClear() {
 
 module.exports = listCacheClear;
 
-},{}],187:[function(_dereq_,module,exports){
+},{}],186:[function(_dereq_,module,exports){
 var assocIndexOf = _dereq_('./_assocIndexOf');
 
 /** Used for built-in method references. */
@@ -32115,7 +32162,7 @@ function listCacheDelete(key) {
 
 module.exports = listCacheDelete;
 
-},{"./_assocIndexOf":100}],188:[function(_dereq_,module,exports){
+},{"./_assocIndexOf":99}],187:[function(_dereq_,module,exports){
 var assocIndexOf = _dereq_('./_assocIndexOf');
 
 /**
@@ -32136,7 +32183,7 @@ function listCacheGet(key) {
 
 module.exports = listCacheGet;
 
-},{"./_assocIndexOf":100}],189:[function(_dereq_,module,exports){
+},{"./_assocIndexOf":99}],188:[function(_dereq_,module,exports){
 var assocIndexOf = _dereq_('./_assocIndexOf');
 
 /**
@@ -32154,7 +32201,7 @@ function listCacheHas(key) {
 
 module.exports = listCacheHas;
 
-},{"./_assocIndexOf":100}],190:[function(_dereq_,module,exports){
+},{"./_assocIndexOf":99}],189:[function(_dereq_,module,exports){
 var assocIndexOf = _dereq_('./_assocIndexOf');
 
 /**
@@ -32182,7 +32229,7 @@ function listCacheSet(key, value) {
 
 module.exports = listCacheSet;
 
-},{"./_assocIndexOf":100}],191:[function(_dereq_,module,exports){
+},{"./_assocIndexOf":99}],190:[function(_dereq_,module,exports){
 var Hash = _dereq_('./_Hash'),
     ListCache = _dereq_('./_ListCache'),
     Map = _dereq_('./_Map');
@@ -32205,7 +32252,7 @@ function mapCacheClear() {
 
 module.exports = mapCacheClear;
 
-},{"./_Hash":80,"./_ListCache":81,"./_Map":82}],192:[function(_dereq_,module,exports){
+},{"./_Hash":79,"./_ListCache":80,"./_Map":81}],191:[function(_dereq_,module,exports){
 var getMapData = _dereq_('./_getMapData');
 
 /**
@@ -32225,7 +32272,7 @@ function mapCacheDelete(key) {
 
 module.exports = mapCacheDelete;
 
-},{"./_getMapData":161}],193:[function(_dereq_,module,exports){
+},{"./_getMapData":160}],192:[function(_dereq_,module,exports){
 var getMapData = _dereq_('./_getMapData');
 
 /**
@@ -32243,7 +32290,7 @@ function mapCacheGet(key) {
 
 module.exports = mapCacheGet;
 
-},{"./_getMapData":161}],194:[function(_dereq_,module,exports){
+},{"./_getMapData":160}],193:[function(_dereq_,module,exports){
 var getMapData = _dereq_('./_getMapData');
 
 /**
@@ -32261,7 +32308,7 @@ function mapCacheHas(key) {
 
 module.exports = mapCacheHas;
 
-},{"./_getMapData":161}],195:[function(_dereq_,module,exports){
+},{"./_getMapData":160}],194:[function(_dereq_,module,exports){
 var getMapData = _dereq_('./_getMapData');
 
 /**
@@ -32285,7 +32332,7 @@ function mapCacheSet(key, value) {
 
 module.exports = mapCacheSet;
 
-},{"./_getMapData":161}],196:[function(_dereq_,module,exports){
+},{"./_getMapData":160}],195:[function(_dereq_,module,exports){
 /**
  * Converts `map` to its key-value pairs.
  *
@@ -32305,7 +32352,7 @@ function mapToArray(map) {
 
 module.exports = mapToArray;
 
-},{}],197:[function(_dereq_,module,exports){
+},{}],196:[function(_dereq_,module,exports){
 /**
  * A specialized version of `matchesProperty` for source values suitable
  * for strict equality comparisons, i.e. `===`.
@@ -32327,7 +32374,7 @@ function matchesStrictComparable(key, srcValue) {
 
 module.exports = matchesStrictComparable;
 
-},{}],198:[function(_dereq_,module,exports){
+},{}],197:[function(_dereq_,module,exports){
 var memoize = _dereq_('./memoize');
 
 /** Used as the maximum memoize cache size. */
@@ -32355,7 +32402,7 @@ function memoizeCapped(func) {
 
 module.exports = memoizeCapped;
 
-},{"./memoize":254}],199:[function(_dereq_,module,exports){
+},{"./memoize":253}],198:[function(_dereq_,module,exports){
 var getNative = _dereq_('./_getNative');
 
 /* Built-in method references that are verified to be native. */
@@ -32363,7 +32410,7 @@ var nativeCreate = getNative(Object, 'create');
 
 module.exports = nativeCreate;
 
-},{"./_getNative":163}],200:[function(_dereq_,module,exports){
+},{"./_getNative":162}],199:[function(_dereq_,module,exports){
 var overArg = _dereq_('./_overArg');
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -32371,7 +32418,7 @@ var nativeKeys = overArg(Object.keys, Object);
 
 module.exports = nativeKeys;
 
-},{"./_overArg":204}],201:[function(_dereq_,module,exports){
+},{"./_overArg":203}],200:[function(_dereq_,module,exports){
 /**
  * This function is like
  * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
@@ -32393,7 +32440,7 @@ function nativeKeysIn(object) {
 
 module.exports = nativeKeysIn;
 
-},{}],202:[function(_dereq_,module,exports){
+},{}],201:[function(_dereq_,module,exports){
 var freeGlobal = _dereq_('./_freeGlobal');
 
 /** Detect free variable `exports`. */
@@ -32417,7 +32464,7 @@ var nodeUtil = (function() {
 
 module.exports = nodeUtil;
 
-},{"./_freeGlobal":158}],203:[function(_dereq_,module,exports){
+},{"./_freeGlobal":157}],202:[function(_dereq_,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -32441,7 +32488,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],204:[function(_dereq_,module,exports){
+},{}],203:[function(_dereq_,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -32458,7 +32505,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],205:[function(_dereq_,module,exports){
+},{}],204:[function(_dereq_,module,exports){
 var apply = _dereq_('./_apply');
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -32496,7 +32543,7 @@ function overRest(func, start, transform) {
 
 module.exports = overRest;
 
-},{"./_apply":91}],206:[function(_dereq_,module,exports){
+},{"./_apply":90}],205:[function(_dereq_,module,exports){
 var freeGlobal = _dereq_('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -32507,7 +32554,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":158}],207:[function(_dereq_,module,exports){
+},{"./_freeGlobal":157}],206:[function(_dereq_,module,exports){
 /**
  * Gets the value at `key`, unless `key` is "__proto__".
  *
@@ -32524,7 +32571,7 @@ function safeGet(object, key) {
 
 module.exports = safeGet;
 
-},{}],208:[function(_dereq_,module,exports){
+},{}],207:[function(_dereq_,module,exports){
 /** Used to stand-in for `undefined` hash values. */
 var HASH_UNDEFINED = '__lodash_hash_undefined__';
 
@@ -32545,7 +32592,7 @@ function setCacheAdd(value) {
 
 module.exports = setCacheAdd;
 
-},{}],209:[function(_dereq_,module,exports){
+},{}],208:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is in the array cache.
  *
@@ -32561,7 +32608,7 @@ function setCacheHas(value) {
 
 module.exports = setCacheHas;
 
-},{}],210:[function(_dereq_,module,exports){
+},{}],209:[function(_dereq_,module,exports){
 /**
  * Converts `set` to an array of its values.
  *
@@ -32581,7 +32628,7 @@ function setToArray(set) {
 
 module.exports = setToArray;
 
-},{}],211:[function(_dereq_,module,exports){
+},{}],210:[function(_dereq_,module,exports){
 var baseSetToString = _dereq_('./_baseSetToString'),
     shortOut = _dereq_('./_shortOut');
 
@@ -32597,7 +32644,7 @@ var setToString = shortOut(baseSetToString);
 
 module.exports = setToString;
 
-},{"./_baseSetToString":134,"./_shortOut":212}],212:[function(_dereq_,module,exports){
+},{"./_baseSetToString":133,"./_shortOut":211}],211:[function(_dereq_,module,exports){
 /** Used to detect hot functions by number of calls within a span of milliseconds. */
 var HOT_COUNT = 800,
     HOT_SPAN = 16;
@@ -32636,7 +32683,7 @@ function shortOut(func) {
 
 module.exports = shortOut;
 
-},{}],213:[function(_dereq_,module,exports){
+},{}],212:[function(_dereq_,module,exports){
 var ListCache = _dereq_('./_ListCache');
 
 /**
@@ -32653,7 +32700,7 @@ function stackClear() {
 
 module.exports = stackClear;
 
-},{"./_ListCache":81}],214:[function(_dereq_,module,exports){
+},{"./_ListCache":80}],213:[function(_dereq_,module,exports){
 /**
  * Removes `key` and its value from the stack.
  *
@@ -32673,7 +32720,7 @@ function stackDelete(key) {
 
 module.exports = stackDelete;
 
-},{}],215:[function(_dereq_,module,exports){
+},{}],214:[function(_dereq_,module,exports){
 /**
  * Gets the stack value for `key`.
  *
@@ -32689,7 +32736,7 @@ function stackGet(key) {
 
 module.exports = stackGet;
 
-},{}],216:[function(_dereq_,module,exports){
+},{}],215:[function(_dereq_,module,exports){
 /**
  * Checks if a stack value for `key` exists.
  *
@@ -32705,7 +32752,7 @@ function stackHas(key) {
 
 module.exports = stackHas;
 
-},{}],217:[function(_dereq_,module,exports){
+},{}],216:[function(_dereq_,module,exports){
 var ListCache = _dereq_('./_ListCache'),
     Map = _dereq_('./_Map'),
     MapCache = _dereq_('./_MapCache');
@@ -32741,7 +32788,7 @@ function stackSet(key, value) {
 
 module.exports = stackSet;
 
-},{"./_ListCache":81,"./_Map":82,"./_MapCache":83}],218:[function(_dereq_,module,exports){
+},{"./_ListCache":80,"./_Map":81,"./_MapCache":82}],217:[function(_dereq_,module,exports){
 var memoizeCapped = _dereq_('./_memoizeCapped');
 
 /** Used to match property names within property paths. */
@@ -32770,7 +32817,7 @@ var stringToPath = memoizeCapped(function(string) {
 
 module.exports = stringToPath;
 
-},{"./_memoizeCapped":198}],219:[function(_dereq_,module,exports){
+},{"./_memoizeCapped":197}],218:[function(_dereq_,module,exports){
 var isSymbol = _dereq_('./isSymbol');
 
 /** Used as references for various `Number` constants. */
@@ -32793,7 +32840,7 @@ function toKey(value) {
 
 module.exports = toKey;
 
-},{"./isSymbol":247}],220:[function(_dereq_,module,exports){
+},{"./isSymbol":246}],219:[function(_dereq_,module,exports){
 /** Used for built-in method references. */
 var funcProto = Function.prototype;
 
@@ -32821,7 +32868,7 @@ function toSource(func) {
 
 module.exports = toSource;
 
-},{}],221:[function(_dereq_,module,exports){
+},{}],220:[function(_dereq_,module,exports){
 var assignValue = _dereq_('./_assignValue'),
     copyObject = _dereq_('./_copyObject'),
     createAssigner = _dereq_('./_createAssigner'),
@@ -32881,7 +32928,7 @@ var assign = createAssigner(function(object, source) {
 
 module.exports = assign;
 
-},{"./_assignValue":99,"./_copyObject":147,"./_createAssigner":151,"./_isPrototype":184,"./isArrayLike":231,"./keys":249}],222:[function(_dereq_,module,exports){
+},{"./_assignValue":98,"./_copyObject":146,"./_createAssigner":150,"./_isPrototype":183,"./isArrayLike":230,"./keys":248}],221:[function(_dereq_,module,exports){
 var baseClone = _dereq_('./_baseClone');
 
 /** Used to compose bitmasks for cloning. */
@@ -32912,7 +32959,7 @@ function cloneDeep(value) {
 
 module.exports = cloneDeep;
 
-},{"./_baseClone":104}],223:[function(_dereq_,module,exports){
+},{"./_baseClone":103}],222:[function(_dereq_,module,exports){
 /**
  * Creates a function that returns `value`.
  *
@@ -32940,7 +32987,7 @@ function constant(value) {
 
 module.exports = constant;
 
-},{}],224:[function(_dereq_,module,exports){
+},{}],223:[function(_dereq_,module,exports){
 /**
  * Performs a
  * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
@@ -32979,7 +33026,7 @@ function eq(value, other) {
 
 module.exports = eq;
 
-},{}],225:[function(_dereq_,module,exports){
+},{}],224:[function(_dereq_,module,exports){
 var arrayFilter = _dereq_('./_arrayFilter'),
     baseFilter = _dereq_('./_baseFilter'),
     baseIteratee = _dereq_('./_baseIteratee'),
@@ -33029,7 +33076,7 @@ function filter(collection, predicate) {
 
 module.exports = filter;
 
-},{"./_arrayFilter":93,"./_baseFilter":107,"./_baseIteratee":122,"./isArray":230}],226:[function(_dereq_,module,exports){
+},{"./_arrayFilter":92,"./_baseFilter":106,"./_baseIteratee":121,"./isArray":229}],225:[function(_dereq_,module,exports){
 var baseGet = _dereq_('./_baseGet');
 
 /**
@@ -33064,7 +33111,7 @@ function get(object, path, defaultValue) {
 
 module.exports = get;
 
-},{"./_baseGet":110}],227:[function(_dereq_,module,exports){
+},{"./_baseGet":109}],226:[function(_dereq_,module,exports){
 var baseHasIn = _dereq_('./_baseHasIn'),
     hasPath = _dereq_('./_hasPath');
 
@@ -33100,7 +33147,7 @@ function hasIn(object, path) {
 
 module.exports = hasIn;
 
-},{"./_baseHasIn":113,"./_hasPath":170}],228:[function(_dereq_,module,exports){
+},{"./_baseHasIn":112,"./_hasPath":169}],227:[function(_dereq_,module,exports){
 /**
  * This method returns the first argument it receives.
  *
@@ -33123,7 +33170,7 @@ function identity(value) {
 
 module.exports = identity;
 
-},{}],229:[function(_dereq_,module,exports){
+},{}],228:[function(_dereq_,module,exports){
 var baseIsArguments = _dereq_('./_baseIsArguments'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -33161,7 +33208,7 @@ var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsAr
 
 module.exports = isArguments;
 
-},{"./_baseIsArguments":114,"./isObjectLike":244}],230:[function(_dereq_,module,exports){
+},{"./_baseIsArguments":113,"./isObjectLike":243}],229:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is classified as an `Array` object.
  *
@@ -33189,7 +33236,7 @@ var isArray = Array.isArray;
 
 module.exports = isArray;
 
-},{}],231:[function(_dereq_,module,exports){
+},{}],230:[function(_dereq_,module,exports){
 var isFunction = _dereq_('./isFunction'),
     isLength = _dereq_('./isLength');
 
@@ -33224,7 +33271,7 @@ function isArrayLike(value) {
 
 module.exports = isArrayLike;
 
-},{"./isFunction":237,"./isLength":238}],232:[function(_dereq_,module,exports){
+},{"./isFunction":236,"./isLength":237}],231:[function(_dereq_,module,exports){
 var isArrayLike = _dereq_('./isArrayLike'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -33259,7 +33306,7 @@ function isArrayLikeObject(value) {
 
 module.exports = isArrayLikeObject;
 
-},{"./isArrayLike":231,"./isObjectLike":244}],233:[function(_dereq_,module,exports){
+},{"./isArrayLike":230,"./isObjectLike":243}],232:[function(_dereq_,module,exports){
 var root = _dereq_('./_root'),
     stubFalse = _dereq_('./stubFalse');
 
@@ -33299,7 +33346,7 @@ var isBuffer = nativeIsBuffer || stubFalse;
 
 module.exports = isBuffer;
 
-},{"./_root":206,"./stubFalse":259}],234:[function(_dereq_,module,exports){
+},{"./_root":205,"./stubFalse":258}],233:[function(_dereq_,module,exports){
 var baseKeys = _dereq_('./_baseKeys'),
     getTag = _dereq_('./_getTag'),
     isArguments = _dereq_('./isArguments'),
@@ -33378,7 +33425,7 @@ function isEmpty(value) {
 
 module.exports = isEmpty;
 
-},{"./_baseKeys":123,"./_getTag":168,"./_isPrototype":184,"./isArguments":229,"./isArray":230,"./isArrayLike":231,"./isBuffer":233,"./isTypedArray":248}],235:[function(_dereq_,module,exports){
+},{"./_baseKeys":122,"./_getTag":167,"./_isPrototype":183,"./isArguments":228,"./isArray":229,"./isArrayLike":230,"./isBuffer":232,"./isTypedArray":247}],234:[function(_dereq_,module,exports){
 var baseIsEqual = _dereq_('./_baseIsEqual');
 
 /**
@@ -33415,7 +33462,7 @@ function isEqual(value, other) {
 
 module.exports = isEqual;
 
-},{"./_baseIsEqual":115}],236:[function(_dereq_,module,exports){
+},{"./_baseIsEqual":114}],235:[function(_dereq_,module,exports){
 var root = _dereq_('./_root');
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -33453,7 +33500,7 @@ function isFinite(value) {
 
 module.exports = isFinite;
 
-},{"./_root":206}],237:[function(_dereq_,module,exports){
+},{"./_root":205}],236:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     isObject = _dereq_('./isObject');
 
@@ -33492,7 +33539,7 @@ function isFunction(value) {
 
 module.exports = isFunction;
 
-},{"./_baseGetTag":112,"./isObject":243}],238:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./isObject":242}],237:[function(_dereq_,module,exports){
 /** Used as references for various `Number` constants. */
 var MAX_SAFE_INTEGER = 9007199254740991;
 
@@ -33529,7 +33576,7 @@ function isLength(value) {
 
 module.exports = isLength;
 
-},{}],239:[function(_dereq_,module,exports){
+},{}],238:[function(_dereq_,module,exports){
 var baseIsMap = _dereq_('./_baseIsMap'),
     baseUnary = _dereq_('./_baseUnary'),
     nodeUtil = _dereq_('./_nodeUtil');
@@ -33558,7 +33605,7 @@ var isMap = nodeIsMap ? baseUnary(nodeIsMap) : baseIsMap;
 
 module.exports = isMap;
 
-},{"./_baseIsMap":117,"./_baseUnary":137,"./_nodeUtil":202}],240:[function(_dereq_,module,exports){
+},{"./_baseIsMap":116,"./_baseUnary":136,"./_nodeUtil":201}],239:[function(_dereq_,module,exports){
 var isNumber = _dereq_('./isNumber');
 
 /**
@@ -33598,7 +33645,7 @@ function isNaN(value) {
 
 module.exports = isNaN;
 
-},{"./isNumber":242}],241:[function(_dereq_,module,exports){
+},{"./isNumber":241}],240:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is `null` or `undefined`.
  *
@@ -33625,7 +33672,7 @@ function isNil(value) {
 
 module.exports = isNil;
 
-},{}],242:[function(_dereq_,module,exports){
+},{}],241:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -33665,7 +33712,7 @@ function isNumber(value) {
 
 module.exports = isNumber;
 
-},{"./_baseGetTag":112,"./isObjectLike":244}],243:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./isObjectLike":243}],242:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is the
  * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
@@ -33698,7 +33745,7 @@ function isObject(value) {
 
 module.exports = isObject;
 
-},{}],244:[function(_dereq_,module,exports){
+},{}],243:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -33729,7 +33776,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],245:[function(_dereq_,module,exports){
+},{}],244:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     getPrototype = _dereq_('./_getPrototype'),
     isObjectLike = _dereq_('./isObjectLike');
@@ -33793,7 +33840,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":112,"./_getPrototype":164,"./isObjectLike":244}],246:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./_getPrototype":163,"./isObjectLike":243}],245:[function(_dereq_,module,exports){
 var baseIsSet = _dereq_('./_baseIsSet'),
     baseUnary = _dereq_('./_baseUnary'),
     nodeUtil = _dereq_('./_nodeUtil');
@@ -33822,7 +33869,7 @@ var isSet = nodeIsSet ? baseUnary(nodeIsSet) : baseIsSet;
 
 module.exports = isSet;
 
-},{"./_baseIsSet":120,"./_baseUnary":137,"./_nodeUtil":202}],247:[function(_dereq_,module,exports){
+},{"./_baseIsSet":119,"./_baseUnary":136,"./_nodeUtil":201}],246:[function(_dereq_,module,exports){
 var baseGetTag = _dereq_('./_baseGetTag'),
     isObjectLike = _dereq_('./isObjectLike');
 
@@ -33853,7 +33900,7 @@ function isSymbol(value) {
 
 module.exports = isSymbol;
 
-},{"./_baseGetTag":112,"./isObjectLike":244}],248:[function(_dereq_,module,exports){
+},{"./_baseGetTag":111,"./isObjectLike":243}],247:[function(_dereq_,module,exports){
 var baseIsTypedArray = _dereq_('./_baseIsTypedArray'),
     baseUnary = _dereq_('./_baseUnary'),
     nodeUtil = _dereq_('./_nodeUtil');
@@ -33882,7 +33929,7 @@ var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedA
 
 module.exports = isTypedArray;
 
-},{"./_baseIsTypedArray":121,"./_baseUnary":137,"./_nodeUtil":202}],249:[function(_dereq_,module,exports){
+},{"./_baseIsTypedArray":120,"./_baseUnary":136,"./_nodeUtil":201}],248:[function(_dereq_,module,exports){
 var arrayLikeKeys = _dereq_('./_arrayLikeKeys'),
     baseKeys = _dereq_('./_baseKeys'),
     isArrayLike = _dereq_('./isArrayLike');
@@ -33921,7 +33968,7 @@ function keys(object) {
 
 module.exports = keys;
 
-},{"./_arrayLikeKeys":94,"./_baseKeys":123,"./isArrayLike":231}],250:[function(_dereq_,module,exports){
+},{"./_arrayLikeKeys":93,"./_baseKeys":122,"./isArrayLike":230}],249:[function(_dereq_,module,exports){
 var arrayLikeKeys = _dereq_('./_arrayLikeKeys'),
     baseKeysIn = _dereq_('./_baseKeysIn'),
     isArrayLike = _dereq_('./isArrayLike');
@@ -33955,7 +34002,7 @@ function keysIn(object) {
 
 module.exports = keysIn;
 
-},{"./_arrayLikeKeys":94,"./_baseKeysIn":124,"./isArrayLike":231}],251:[function(_dereq_,module,exports){
+},{"./_arrayLikeKeys":93,"./_baseKeysIn":123,"./isArrayLike":230}],250:[function(_dereq_,module,exports){
 (function (global){
 /**
  * @license
@@ -51056,7 +51103,7 @@ module.exports = keysIn;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],252:[function(_dereq_,module,exports){
+},{}],251:[function(_dereq_,module,exports){
 var arrayMap = _dereq_('./_arrayMap'),
     baseIteratee = _dereq_('./_baseIteratee'),
     baseMap = _dereq_('./_baseMap'),
@@ -51111,7 +51158,7 @@ function map(collection, iteratee) {
 
 module.exports = map;
 
-},{"./_arrayMap":95,"./_baseIteratee":122,"./_baseMap":125,"./isArray":230}],253:[function(_dereq_,module,exports){
+},{"./_arrayMap":94,"./_baseIteratee":121,"./_baseMap":124,"./isArray":229}],252:[function(_dereq_,module,exports){
 var baseAssignValue = _dereq_('./_baseAssignValue'),
     baseForOwn = _dereq_('./_baseForOwn'),
     baseIteratee = _dereq_('./_baseIteratee');
@@ -51156,7 +51203,7 @@ function mapValues(object, iteratee) {
 
 module.exports = mapValues;
 
-},{"./_baseAssignValue":103,"./_baseForOwn":109,"./_baseIteratee":122}],254:[function(_dereq_,module,exports){
+},{"./_baseAssignValue":102,"./_baseForOwn":108,"./_baseIteratee":121}],253:[function(_dereq_,module,exports){
 var MapCache = _dereq_('./_MapCache');
 
 /** Error message constants. */
@@ -51231,7 +51278,7 @@ memoize.Cache = MapCache;
 
 module.exports = memoize;
 
-},{"./_MapCache":83}],255:[function(_dereq_,module,exports){
+},{"./_MapCache":82}],254:[function(_dereq_,module,exports){
 var baseMerge = _dereq_('./_baseMerge'),
     createAssigner = _dereq_('./_createAssigner');
 
@@ -51272,7 +51319,7 @@ var merge = createAssigner(function(object, source, srcIndex) {
 
 module.exports = merge;
 
-},{"./_baseMerge":128,"./_createAssigner":151}],256:[function(_dereq_,module,exports){
+},{"./_baseMerge":127,"./_createAssigner":150}],255:[function(_dereq_,module,exports){
 var baseProperty = _dereq_('./_baseProperty'),
     basePropertyDeep = _dereq_('./_basePropertyDeep'),
     isKey = _dereq_('./_isKey'),
@@ -51306,7 +51353,7 @@ function property(path) {
 
 module.exports = property;
 
-},{"./_baseProperty":130,"./_basePropertyDeep":131,"./_isKey":181,"./_toKey":219}],257:[function(_dereq_,module,exports){
+},{"./_baseProperty":129,"./_basePropertyDeep":130,"./_isKey":180,"./_toKey":218}],256:[function(_dereq_,module,exports){
 var baseSet = _dereq_('./_baseSet');
 
 /**
@@ -51343,7 +51390,7 @@ function set(object, path, value) {
 
 module.exports = set;
 
-},{"./_baseSet":133}],258:[function(_dereq_,module,exports){
+},{"./_baseSet":132}],257:[function(_dereq_,module,exports){
 /**
  * This method returns a new empty array.
  *
@@ -51368,7 +51415,7 @@ function stubArray() {
 
 module.exports = stubArray;
 
-},{}],259:[function(_dereq_,module,exports){
+},{}],258:[function(_dereq_,module,exports){
 /**
  * This method returns `false`.
  *
@@ -51388,7 +51435,7 @@ function stubFalse() {
 
 module.exports = stubFalse;
 
-},{}],260:[function(_dereq_,module,exports){
+},{}],259:[function(_dereq_,module,exports){
 var copyObject = _dereq_('./_copyObject'),
     keysIn = _dereq_('./keysIn');
 
@@ -51422,7 +51469,7 @@ function toPlainObject(value) {
 
 module.exports = toPlainObject;
 
-},{"./_copyObject":147,"./keysIn":250}],261:[function(_dereq_,module,exports){
+},{"./_copyObject":146,"./keysIn":249}],260:[function(_dereq_,module,exports){
 var baseToString = _dereq_('./_baseToString');
 
 /**
@@ -51452,7 +51499,7 @@ function toString(value) {
 
 module.exports = toString;
 
-},{"./_baseToString":136}],262:[function(_dereq_,module,exports){
+},{"./_baseToString":135}],261:[function(_dereq_,module,exports){
 //! moment.js
 
 ;(function (global, factory) {
@@ -55960,7 +56007,7 @@ module.exports = toString;
 
 })));
 
-},{}],263:[function(_dereq_,module,exports){
+},{}],262:[function(_dereq_,module,exports){
 (function (global){
 /*! Native Promise Only
     v0.8.1 (c) Kyle Simpson
@@ -56337,11 +56384,11 @@ module.exports = toString;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],264:[function(_dereq_,module,exports){
+},{}],263:[function(_dereq_,module,exports){
 (function (global){
 /**!
  * @fileOverview Kickass library to create and place poppers near their reference elements.
- * @version 1.12.9
+ * @version 1.14.3
  * @license
  * Copyright (c) 2016 Federico Zivolo and contributors
  *
@@ -56370,6 +56417,7 @@ module.exports = toString;
 }(this, (function () { 'use strict';
 
 var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 var longerTimeoutBrowsers = ['Edge', 'Trident', 'Firefox'];
 var timeoutDuration = 0;
 for (var i = 0; i < longerTimeoutBrowsers.length; i += 1) {
@@ -56489,11 +56537,31 @@ function getScrollParent(element) {
       overflowX = _getStyleComputedProp.overflowX,
       overflowY = _getStyleComputedProp.overflowY;
 
-  if (/(auto|scroll)/.test(overflow + overflowY + overflowX)) {
+  if (/(auto|scroll|overlay)/.test(overflow + overflowY + overflowX)) {
     return element;
   }
 
   return getScrollParent(getParentNode(element));
+}
+
+var isIE11 = isBrowser && !!(window.MSInputMethodContext && document.documentMode);
+var isIE10 = isBrowser && /MSIE 10/.test(navigator.userAgent);
+
+/**
+ * Determines if the browser is Internet Explorer
+ * @method
+ * @memberof Popper.Utils
+ * @param {Number} version to check
+ * @returns {Boolean} isIE
+ */
+function isIE(version) {
+  if (version === 11) {
+    return isIE11;
+  }
+  if (version === 10) {
+    return isIE10;
+  }
+  return isIE11 || isIE10;
 }
 
 /**
@@ -56504,16 +56572,23 @@ function getScrollParent(element) {
  * @returns {Element} offset parent
  */
 function getOffsetParent(element) {
+  if (!element) {
+    return document.documentElement;
+  }
+
+  var noOffsetParent = isIE(10) ? document.body : null;
+
   // NOTE: 1 DOM access here
-  var offsetParent = element && element.offsetParent;
+  var offsetParent = element.offsetParent;
+  // Skip hidden elements which don't have an offsetParent
+  while (offsetParent === noOffsetParent && element.nextElementSibling) {
+    offsetParent = (element = element.nextElementSibling).offsetParent;
+  }
+
   var nodeName = offsetParent && offsetParent.nodeName;
 
   if (!nodeName || nodeName === 'BODY' || nodeName === 'HTML') {
-    if (element) {
-      return element.ownerDocument.documentElement;
-    }
-
-    return document.documentElement;
+    return element ? element.ownerDocument.documentElement : document.documentElement;
   }
 
   // .offsetParent will return the closest TD or TABLE in case
@@ -56655,29 +56730,14 @@ function getBordersSize(styles, axis) {
   return parseFloat(styles['border' + sideA + 'Width'], 10) + parseFloat(styles['border' + sideB + 'Width'], 10);
 }
 
-/**
- * Tells if you are running Internet Explorer 10
- * @method
- * @memberof Popper.Utils
- * @returns {Boolean} isIE10
- */
-var isIE10 = undefined;
-
-var isIE10$1 = function () {
-  if (isIE10 === undefined) {
-    isIE10 = navigator.appVersion.indexOf('MSIE 10') !== -1;
-  }
-  return isIE10;
-};
-
 function getSize(axis, body, html, computedStyle) {
-  return Math.max(body['offset' + axis], body['scroll' + axis], html['client' + axis], html['offset' + axis], html['scroll' + axis], isIE10$1() ? html['offset' + axis] + computedStyle['margin' + (axis === 'Height' ? 'Top' : 'Left')] + computedStyle['margin' + (axis === 'Height' ? 'Bottom' : 'Right')] : 0);
+  return Math.max(body['offset' + axis], body['scroll' + axis], html['client' + axis], html['offset' + axis], html['scroll' + axis], isIE(10) ? html['offset' + axis] + computedStyle['margin' + (axis === 'Height' ? 'Top' : 'Left')] + computedStyle['margin' + (axis === 'Height' ? 'Bottom' : 'Right')] : 0);
 }
 
 function getWindowSizes() {
   var body = document.body;
   var html = document.documentElement;
-  var computedStyle = isIE10$1() && getComputedStyle(html);
+  var computedStyle = isIE(10) && getComputedStyle(html);
 
   return {
     height: getSize('Height', body, html, computedStyle),
@@ -56769,8 +56829,8 @@ function getBoundingClientRect(element) {
   // IE10 10 FIX: Please, don't ask, the element isn't
   // considered in DOM in some circumstances...
   // This isn't reproducible in IE10 compatibility mode of IE11
-  if (isIE10$1()) {
-    try {
+  try {
+    if (isIE(10)) {
       rect = element.getBoundingClientRect();
       var scrollTop = getScroll(element, 'top');
       var scrollLeft = getScroll(element, 'left');
@@ -56778,10 +56838,10 @@ function getBoundingClientRect(element) {
       rect.left += scrollLeft;
       rect.bottom += scrollTop;
       rect.right += scrollLeft;
-    } catch (err) {}
-  } else {
-    rect = element.getBoundingClientRect();
-  }
+    } else {
+      rect = element.getBoundingClientRect();
+    }
+  } catch (e) {}
 
   var result = {
     left: rect.left,
@@ -56813,7 +56873,9 @@ function getBoundingClientRect(element) {
 }
 
 function getOffsetRectRelativeToArbitraryNode(children, parent) {
-  var isIE10 = isIE10$1();
+  var fixedPosition = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  var isIE10 = isIE(10);
   var isHTML = parent.nodeName === 'HTML';
   var childrenRect = getBoundingClientRect(children);
   var parentRect = getBoundingClientRect(parent);
@@ -56823,6 +56885,11 @@ function getOffsetRectRelativeToArbitraryNode(children, parent) {
   var borderTopWidth = parseFloat(styles.borderTopWidth, 10);
   var borderLeftWidth = parseFloat(styles.borderLeftWidth, 10);
 
+  // In cases where the parent is fixed, we must ignore negative scroll in offset calc
+  if (fixedPosition && parent.nodeName === 'HTML') {
+    parentRect.top = Math.max(parentRect.top, 0);
+    parentRect.left = Math.max(parentRect.left, 0);
+  }
   var offsets = getClientRect({
     top: childrenRect.top - parentRect.top - borderTopWidth,
     left: childrenRect.left - parentRect.left - borderLeftWidth,
@@ -56850,7 +56917,7 @@ function getOffsetRectRelativeToArbitraryNode(children, parent) {
     offsets.marginLeft = marginLeft;
   }
 
-  if (isIE10 ? parent.contains(scrollParent) : parent === scrollParent && scrollParent.nodeName !== 'BODY') {
+  if (isIE10 && !fixedPosition ? parent.contains(scrollParent) : parent === scrollParent && scrollParent.nodeName !== 'BODY') {
     offsets = includeScroll(offsets, parent);
   }
 
@@ -56858,13 +56925,15 @@ function getOffsetRectRelativeToArbitraryNode(children, parent) {
 }
 
 function getViewportOffsetRectRelativeToArtbitraryNode(element) {
+  var excludeScroll = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
   var html = element.ownerDocument.documentElement;
   var relativeOffset = getOffsetRectRelativeToArbitraryNode(element, html);
   var width = Math.max(html.clientWidth, window.innerWidth || 0);
   var height = Math.max(html.clientHeight, window.innerHeight || 0);
 
-  var scrollTop = getScroll(html);
-  var scrollLeft = getScroll(html, 'left');
+  var scrollTop = !excludeScroll ? getScroll(html) : 0;
+  var scrollLeft = !excludeScroll ? getScroll(html, 'left') : 0;
 
   var offset = {
     top: scrollTop - relativeOffset.top + relativeOffset.marginTop,
@@ -56896,6 +56965,26 @@ function isFixed(element) {
 }
 
 /**
+ * Finds the first parent of an element that has a transformed property defined
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @returns {Element} first transformed parent or documentElement
+ */
+
+function getFixedPositionOffsetParent(element) {
+  // This check is needed to avoid errors in case one of the elements isn't defined for any reason
+  if (!element || !element.parentElement || isIE()) {
+    return document.documentElement;
+  }
+  var el = element.parentElement;
+  while (el && getStyleComputedProperty(el, 'transform') === 'none') {
+    el = el.parentElement;
+  }
+  return el || document.documentElement;
+}
+
+/**
  * Computed the boundaries limits and return them
  * @method
  * @memberof Popper.Utils
@@ -56903,16 +56992,20 @@ function isFixed(element) {
  * @param {HTMLElement} reference
  * @param {number} padding
  * @param {HTMLElement} boundariesElement - Element used to define the boundaries
+ * @param {Boolean} fixedPosition - Is in fixed position mode
  * @returns {Object} Coordinates of the boundaries
  */
 function getBoundaries(popper, reference, padding, boundariesElement) {
+  var fixedPosition = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
+
   // NOTE: 1 DOM access here
+
   var boundaries = { top: 0, left: 0 };
-  var offsetParent = findCommonOffsetParent(popper, reference);
+  var offsetParent = fixedPosition ? getFixedPositionOffsetParent(popper) : findCommonOffsetParent(popper, reference);
 
   // Handle viewport case
   if (boundariesElement === 'viewport') {
-    boundaries = getViewportOffsetRectRelativeToArtbitraryNode(offsetParent);
+    boundaries = getViewportOffsetRectRelativeToArtbitraryNode(offsetParent, fixedPosition);
   } else {
     // Handle other cases based on DOM element used as boundaries
     var boundariesNode = void 0;
@@ -56927,7 +57020,7 @@ function getBoundaries(popper, reference, padding, boundariesElement) {
       boundariesNode = boundariesElement;
     }
 
-    var offsets = getOffsetRectRelativeToArbitraryNode(boundariesNode, offsetParent);
+    var offsets = getOffsetRectRelativeToArbitraryNode(boundariesNode, offsetParent, fixedPosition);
 
     // In case of HTML, we need a different computation
     if (boundariesNode.nodeName === 'HTML' && !isFixed(offsetParent)) {
@@ -57028,11 +57121,14 @@ function computeAutoPlacement(placement, refRect, popper, reference, boundariesE
  * @param {Object} state
  * @param {Element} popper - the popper element
  * @param {Element} reference - the reference element (the popper will be relative to this)
+ * @param {Element} fixedPosition - is in fixed position mode
  * @returns {Object} An object containing the offsets which will be applied to the popper
  */
 function getReferenceOffsets(state, popper, reference) {
-  var commonOffsetParent = findCommonOffsetParent(popper, reference);
-  return getOffsetRectRelativeToArbitraryNode(reference, commonOffsetParent);
+  var fixedPosition = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+
+  var commonOffsetParent = fixedPosition ? getFixedPositionOffsetParent(popper) : findCommonOffsetParent(popper, reference);
+  return getOffsetRectRelativeToArbitraryNode(reference, commonOffsetParent, fixedPosition);
 }
 
 /**
@@ -57205,7 +57301,7 @@ function update() {
   };
 
   // compute reference element offsets
-  data.offsets.reference = getReferenceOffsets(this.state, this.popper, this.reference);
+  data.offsets.reference = getReferenceOffsets(this.state, this.popper, this.reference, this.options.positionFixed);
 
   // compute auto placement, store placement inside the data object,
   // modifiers will be able to edit `placement` if needed
@@ -57215,9 +57311,12 @@ function update() {
   // store the computed placement inside `originalPlacement`
   data.originalPlacement = data.placement;
 
+  data.positionFixed = this.options.positionFixed;
+
   // compute the popper offsets
   data.offsets.popper = getPopperOffsets(this.popper, data.offsets.reference, data.placement);
-  data.offsets.popper.position = 'absolute';
+
+  data.offsets.popper.position = this.options.positionFixed ? 'fixed' : 'absolute';
 
   // run the modifiers
   data = runModifiers(this.modifiers, data);
@@ -57257,7 +57356,7 @@ function getSupportedPropertyName(property) {
   var prefixes = [false, 'ms', 'Webkit', 'Moz', 'O'];
   var upperProp = property.charAt(0).toUpperCase() + property.slice(1);
 
-  for (var i = 0; i < prefixes.length - 1; i++) {
+  for (var i = 0; i < prefixes.length; i++) {
     var prefix = prefixes[i];
     var toCheck = prefix ? '' + prefix + upperProp : property;
     if (typeof document.body.style[toCheck] !== 'undefined') {
@@ -57278,9 +57377,12 @@ function destroy() {
   // touch DOM only if `applyStyle` modifier is enabled
   if (isModifierEnabled(this.modifiers, 'applyStyle')) {
     this.popper.removeAttribute('x-placement');
-    this.popper.style.left = '';
     this.popper.style.position = '';
     this.popper.style.top = '';
+    this.popper.style.left = '';
+    this.popper.style.right = '';
+    this.popper.style.bottom = '';
+    this.popper.style.willChange = '';
     this.popper.style[getSupportedPropertyName('transform')] = '';
   }
 
@@ -57468,12 +57570,12 @@ function applyStyle(data) {
  * @method
  * @memberof Popper.modifiers
  * @param {HTMLElement} reference - The reference element used to position the popper
- * @param {HTMLElement} popper - The HTML element used as popper.
+ * @param {HTMLElement} popper - The HTML element used as popper
  * @param {Object} options - Popper.js options
  */
 function applyStyleOnLoad(reference, popper, options, modifierOptions, state) {
   // compute reference element offsets
-  var referenceOffsets = getReferenceOffsets(state, popper, reference);
+  var referenceOffsets = getReferenceOffsets(state, popper, reference, options.positionFixed);
 
   // compute auto placement, store placement inside the data object,
   // modifiers will be able to edit `placement` if needed
@@ -57484,7 +57586,7 @@ function applyStyleOnLoad(reference, popper, options, modifierOptions, state) {
 
   // Apply `position` to popper before anything else because
   // without the position applied we can't guarantee correct computations
-  setStyles(popper, { position: 'absolute' });
+  setStyles(popper, { position: options.positionFixed ? 'fixed' : 'absolute' });
 
   return options;
 }
@@ -57519,11 +57621,13 @@ function computeStyle(data, options) {
     position: popper.position
   };
 
-  // floor sides to avoid blurry text
+  // Avoid blurry text by using full pixel integers.
+  // For pixel-perfect positioning, top/bottom prefers rounded
+  // values, while left/right prefers floored values.
   var offsets = {
     left: Math.floor(popper.left),
-    top: Math.floor(popper.top),
-    bottom: Math.floor(popper.bottom),
+    top: Math.round(popper.top),
+    bottom: Math.round(popper.bottom),
     right: Math.floor(popper.right)
   };
 
@@ -57787,7 +57891,7 @@ function flip(data, options) {
     return data;
   }
 
-  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, options.boundariesElement);
+  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, options.boundariesElement, data.positionFixed);
 
   var placement = data.placement.split('-')[0];
   var placementOpposite = getOppositePlacement(placement);
@@ -58079,7 +58183,27 @@ function preventOverflow(data, options) {
     boundariesElement = getOffsetParent(boundariesElement);
   }
 
-  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, boundariesElement);
+  // NOTE: DOM access here
+  // resets the popper's position so that the document size can be calculated excluding
+  // the size of the popper element itself
+  var transformProp = getSupportedPropertyName('transform');
+  var popperStyles = data.instance.popper.style; // assignment to help minification
+  var top = popperStyles.top,
+      left = popperStyles.left,
+      transform = popperStyles[transformProp];
+
+  popperStyles.top = '';
+  popperStyles.left = '';
+  popperStyles[transformProp] = '';
+
+  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, boundariesElement, data.positionFixed);
+
+  // NOTE: DOM access here
+  // restores the original style properties after the offsets have been computed
+  popperStyles.top = top;
+  popperStyles.left = left;
+  popperStyles[transformProp] = transform;
+
   options.boundaries = boundaries;
 
   var order = options.priority;
@@ -58577,6 +58701,12 @@ var Defaults = {
   placement: 'bottom',
 
   /**
+   * Set this to true if you want popper to position it self in 'fixed' mode
+   * @prop {Boolean} positionFixed=false
+   */
+  positionFixed: false,
+
+  /**
    * Whether events (resize, scroll) are initially enabled
    * @prop {Boolean} eventsEnabled=true
    */
@@ -58786,7 +58916,7 @@ return Popper;
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],265:[function(_dereq_,module,exports){
+},{}],264:[function(_dereq_,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -58972,7 +59102,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],266:[function(_dereq_,module,exports){
+},{}],265:[function(_dereq_,module,exports){
 module.exports = function (obj) {
     if (!obj || typeof obj !== 'object') return obj;
     
@@ -59009,7 +59139,7 @@ var isArray = Array.isArray || function (xs) {
     return {}.toString.call(xs) === '[object Array]';
 };
 
-},{}],267:[function(_dereq_,module,exports){
+},{}],266:[function(_dereq_,module,exports){
 /*!
  * Signature Pad v2.3.2
  * https://github.com/szimek/signature_pad
@@ -59621,12 +59751,12 @@ return SignaturePad;
 
 })));
 
-},{}],268:[function(_dereq_,module,exports){
+},{}],267:[function(_dereq_,module,exports){
 !function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.textMaskAddons=t():e.textMaskAddons=t()}(this,function(){return function(e){function t(r){if(n[r])return n[r].exports;var o=n[r]={exports:{},id:r,loaded:!1};return e[r].call(o.exports,o,o.exports,t),o.loaded=!0,o.exports}var n={};return t.m=e,t.c=n,t.p="",t(0)}([function(e,t,n){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var o=n(1);Object.defineProperty(t,"createAutoCorrectedDatePipe",{enumerable:!0,get:function(){return r(o).default}});var i=n(2);Object.defineProperty(t,"createNumberMask",{enumerable:!0,get:function(){return r(i).default}});var u=n(3);Object.defineProperty(t,"emailMask",{enumerable:!0,get:function(){return r(u).default}})},function(e,t){"use strict";function n(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"mm dd yyyy";return function(t){var n=[],r=e.split(/[^dmyHMS]+/),o={dd:31,mm:12,yy:99,yyyy:9999,HH:23,MM:59,SS:59},i={dd:1,mm:1,yy:0,yyyy:1,HH:0,MM:0,SS:0},u=t.split("");r.forEach(function(t){var r=e.indexOf(t),i=parseInt(o[t].toString().substr(0,1),10);parseInt(u[r],10)>i&&(u[r+1]=u[r],u[r]=0,n.push(r))});var c=r.some(function(n){var r=e.indexOf(n),u=n.length,c=t.substr(r,u).replace(/\D/g,""),l=parseInt(c,10);return l>o[n]||c.length===u&&l<i[n]});return!c&&{value:u.join(""),indexesOfPipedChars:n}}}Object.defineProperty(t,"__esModule",{value:!0}),t.default=n},function(e,t){"use strict";function n(){function e(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:c,t=e.length;if(e===c||e[0]===g[0]&&1===t)return g.split(c).concat([v]).concat(m.split(c));if(e===P&&_)return g.split(c).concat(["0",P,v]).concat(m.split(c));var n=e[0]===s&&H;n&&(e=e.toString().substr(1));var u=e.lastIndexOf(P),l=u!==-1,a=void 0,h=void 0,b=void 0;if(e.slice($*-1)===m&&(e=e.slice(0,$*-1)),l&&(_||D)?(a=e.slice(e.slice(0,N)===g?N:0,u),h=e.slice(u+1,t),h=r(h.replace(f,c))):a=e.slice(0,N)===g?e.slice(N):e,L&&("undefined"==typeof L?"undefined":i(L))===p){var O="."===M?"[.]":""+M,S=(a.match(new RegExp(O,"g"))||[]).length;a=a.slice(0,L+S*V)}return a=a.replace(f,c),R||(a=a.replace(/^0+(0$|[^0])/,"$1")),a=x?o(a,M):a,b=r(a),(l&&_||D===!0)&&(e[u-1]!==P&&b.push(y),b.push(P,y),h&&(("undefined"==typeof C?"undefined":i(C))===p&&(h=h.slice(0,C)),b=b.concat(h)),D===!0&&e[u-1]===P&&b.push(v)),N>0&&(b=g.split(c).concat(b)),n&&(b.length===N&&b.push(v),b=[d].concat(b)),m.length>0&&(b=b.concat(m.split(c))),b}var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},n=t.prefix,g=void 0===n?u:n,h=t.suffix,m=void 0===h?c:h,b=t.includeThousandsSeparator,x=void 0===b||b,O=t.thousandsSeparatorSymbol,M=void 0===O?l:O,S=t.allowDecimal,_=void 0!==S&&S,j=t.decimalSymbol,P=void 0===j?a:j,w=t.decimalLimit,C=void 0===w?2:w,k=t.requireDecimal,D=void 0!==k&&k,E=t.allowNegative,H=void 0!==E&&E,I=t.allowLeadingZeroes,R=void 0!==I&&I,A=t.integerLimit,L=void 0===A?null:A,N=g&&g.length||0,$=m&&m.length||0,V=M&&M.length||0;return e.instanceOf="createNumberMask",e}function r(e){return e.split(c).map(function(e){return v.test(e)?v:e})}function o(e,t){return e.replace(/\B(?=(\d{3})+(?!\d))/g,t)}Object.defineProperty(t,"__esModule",{value:!0});var i="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e};t.default=n;var u="$",c="",l=",",a=".",s="-",d=/-/,f=/\D+/g,p="number",v=/\d/,y="[]"},function(e,t,n){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}function o(e,t){e=e.replace(O,v);var n=t.placeholderChar,r=t.currentCaretPosition,o=e.indexOf(y),s=e.lastIndexOf(p),d=s<o?-1:s,f=i(e,o+1,y),g=i(e,d-1,p),h=u(e,o,n),m=c(e,o,d,n),b=l(e,d,n,r);h=a(h),m=a(m),b=a(b,!0);var x=h.concat(f).concat(m).concat(g).concat(b);return x}function i(e,t,n){var r=[];return e[t]===n?r.push(n):r.push(g,n),r.push(g),r}function u(e,t){return t===-1?e:e.slice(0,t)}function c(e,t,n,r){var o=v;return t!==-1&&(o=n===-1?e.slice(t+1,e.length):e.slice(t+1,n)),o=o.replace(new RegExp("[\\s"+r+"]",m),v),o===y?f:o.length<1?h:o[o.length-1]===p?o.slice(0,o.length-1):o}function l(e,t,n,r){var o=v;return t!==-1&&(o=e.slice(t+1,e.length)),o=o.replace(new RegExp("[\\s"+n+".]",m),v),0===o.length?e[t-1]===p&&r!==e.length?f:v:o}function a(e,t){return e.split(v).map(function(e){return e===h?e:t?x:b})}Object.defineProperty(t,"__esModule",{value:!0});var s=n(4),d=r(s),f="*",p=".",v="",y="@",g="[]",h=" ",m="g",b=/[^\s]/,x=/[^.\s]/,O=/\s/g;t.default={mask:o,pipe:d.default}},function(e,t){"use strict";function n(e,t){var n=t.currentCaretPosition,i=t.rawValue,f=t.previousConformedValue,p=t.placeholderChar,v=e;v=r(v);var y=v.indexOf(c),g=null===i.match(new RegExp("[^@\\s."+p+"]"));if(g)return u;if(v.indexOf(a)!==-1||y!==-1&&n!==y+1||i.indexOf(o)===-1&&f!==u&&i.indexOf(l)!==-1)return!1;var h=v.indexOf(o),m=v.slice(h+1,v.length);return(m.match(d)||s).length>1&&v.substr(-1)===l&&n!==i.length&&(v=v.slice(0,v.length-1)),v}function r(e){var t=0;return e.replace(i,function(){return t++,1===t?o:u})}Object.defineProperty(t,"__esModule",{value:!0}),t.default=n;var o="@",i=/@/g,u="",c="@.",l=".",a="..",s=[],d=/\./g}])});
-},{}],269:[function(_dereq_,module,exports){
+},{}],268:[function(_dereq_,module,exports){
 /**!
  * @fileOverview Kickass library to create and place poppers near their reference elements.
- * @version 1.1.7
+ * @version 1.2.0
  * @license
  * Copyright (c) 2016 Federico Zivolo and contributors
  *
@@ -59654,7 +59784,7 @@ return SignaturePad;
 	(global.Tooltip = factory(global.Popper));
 }(this, (function (Popper) { 'use strict';
 
-Popper = Popper && 'default' in Popper ? Popper['default'] : Popper;
+Popper = Popper && Popper.hasOwnProperty('default') ? Popper['default'] : Popper;
 
 /**
  * Check if the given variable is a function
@@ -59729,7 +59859,7 @@ var Tooltip = function () {
    * @class Tooltip
    * @param {HTMLElement} reference - The DOM node used as reference of the tooltip (it can be a jQuery element).
    * @param {Object} options
-   * @param {String} options.placement=bottom
+   * @param {String|PlacementFunction} options.placement=top
    *      Placement of the popper accepted values: `top(-start, -end), right(-start, -end), bottom(-start, -end),
    *      left(-start, -end)`
    * @param {HTMLElement|String|false} options.container=false - Append the tooltip to a specific element.
@@ -59737,7 +59867,7 @@ var Tooltip = function () {
    *      Delay showing and hiding the tooltip (ms) - does not apply to manual trigger type.
    *      If a number is supplied, delay is applied to both hide/show.
    *      Object structure is: `{ show: 500, hide: 100 }`
-   * @param {Boolean} options.html=false - Insert HTML into the tooltip. If false, the content will inserted with `innerText`.
+   * @param {Boolean} options.html=false - Insert HTML into the tooltip. If false, the content will inserted with `textContent`.
    * @param {String|PlacementFunction} options.placement='top' - One of the allowed placements, or a function returning one of them.
    * @param {String} [options.template='<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>']
    *      Base HTML to used when creating the tooltip.
@@ -59748,7 +59878,7 @@ var Tooltip = function () {
    * @param {String} [options.trigger='hover focus']
    *      How tooltip is triggered - click, hover, focus, manual.
    *      You may pass multiple triggers; separate them with a space. `manual` cannot be combined with any other trigger.
-   * @param {HTMLElement} options.boundariesElement
+   * @param {String|HTMLElement} options.boundariesElement
    *      The element used as boundaries for the tooltip. For more information refer to Popper.js'
    *      [boundariesElement docs](https://popper.js.org/popper-documentation.html)
    * @param {Number|String} options.offset=0 - Offset of the tooltip relative to its reference. For more information refer to Popper.js'
@@ -59817,6 +59947,14 @@ var Tooltip = function () {
    */
 
 
+  /**
+   * Updates the tooltip's title content
+   * @method Tooltip#updateTitleContent
+   * @memberof Tooltip
+   * @param {String|HTMLElement} title - The new content to use for the title
+   */
+
+
   //
   // Defaults
   //
@@ -59838,7 +59976,7 @@ var Tooltip = function () {
      * @param {String} template
      * @param {String|HTMLElement|TitleFunction} title
      * @param {Boolean} allowHtml
-     * @return {HTMLelement} tooltipNode
+     * @return {HTMLElement} tooltipNode
      */
     value: function _create(reference, template, title, allowHtml) {
       // create tooltip element
@@ -59854,20 +59992,25 @@ var Tooltip = function () {
 
       // add title to tooltip
       var titleNode = tooltipGenerator.querySelector(this.innerSelector);
+      this._addTitleContent(reference, title, allowHtml, titleNode);
+
+      // return the generated tooltip node
+      return tooltipNode;
+    }
+  }, {
+    key: '_addTitleContent',
+    value: function _addTitleContent(reference, title, allowHtml, titleNode) {
       if (title.nodeType === 1 || title.nodeType === 11) {
         // if title is a element node or document fragment, append it only if allowHtml is true
         allowHtml && titleNode.appendChild(title);
       } else if (isFunction(title)) {
-        // if title is a function, call it and set innerText or innerHtml depending by `allowHtml` value
+        // if title is a function, call it and set textContent or innerHtml depending by `allowHtml` value
         var titleText = title.call(reference);
-        allowHtml ? titleNode.innerHTML = titleText : titleNode.innerText = titleText;
+        allowHtml ? titleNode.innerHTML = titleText : titleNode.textContent = titleText;
       } else {
-        // if it's just a simple text, set innerText or innerHtml depending by `allowHtml` value
-        allowHtml ? titleNode.innerHTML = title : titleNode.innerText = title;
+        // if it's just a simple text, set textContent or innerHtml depending by `allowHtml` value
+        allowHtml ? titleNode.innerHTML = title : titleNode.textContent = title;
       }
-
-      // return the generated tooltip node
-      return tooltipNode;
     }
   }, {
     key: '_show',
@@ -59992,7 +60135,7 @@ var Tooltip = function () {
      * Append tooltip to container
      * @memberof Tooltip
      * @private
-     * @param {HTMLElement} tooltip
+     * @param {HTMLElement} tooltipNode
      * @param {HTMLElement|String|false} container
      */
 
@@ -60095,6 +60238,30 @@ var Tooltip = function () {
         _this4._hide(reference, options);
       }, computedDelay);
     }
+  }, {
+    key: '_updateTitleContent',
+    value: function _updateTitleContent(title) {
+      if (typeof this._tooltipNode === 'undefined') {
+        if (typeof this.options.title !== 'undefined') {
+          this.options.title = title;
+        }
+        return;
+      }
+      var titleNode = this._tooltipNode.parentNode.querySelector(this.innerSelector);
+      this._clearTitleContent(titleNode, this.options.html, this.reference.getAttribute('title') || this.options.title);
+      this._addTitleContent(this.reference, title, this.options.html, titleNode);
+      this.options.title = title;
+      this.popperInstance.update();
+    }
+  }, {
+    key: '_clearTitleContent',
+    value: function _clearTitleContent(titleNode, allowHtml, lastTitle) {
+      if (lastTitle.nodeType === 1 || lastTitle.nodeType === 11) {
+        allowHtml && titleNode.removeChild(lastTitle);
+      } else {
+        allowHtml ? titleNode.innerHTML = '' : titleNode.textContent = '';
+      }
+    }
   }]);
   return Tooltip;
 }();
@@ -60139,6 +60306,10 @@ var _initialiseProps = function _initialiseProps() {
     }
   };
 
+  this.updateTitleContent = function (title) {
+    return _this5._updateTitleContent(title);
+  };
+
   this.arrowSelector = '.tooltip-arrow, .tooltip__arrow';
   this.innerSelector = '.tooltip-inner, .tooltip__inner';
   this._events = [];
@@ -60174,9 +60345,9 @@ return Tooltip;
 })));
 
 
-},{"popper.js":264}],270:[function(_dereq_,module,exports){
+},{"popper.js":263}],269:[function(_dereq_,module,exports){
 !function(e,r){"object"==typeof exports&&"object"==typeof module?module.exports=r():"function"==typeof define&&define.amd?define([],r):"object"==typeof exports?exports.vanillaTextMask=r():e.vanillaTextMask=r()}(this,function(){return function(e){function r(n){if(t[n])return t[n].exports;var o=t[n]={exports:{},id:n,loaded:!1};return e[n].call(o.exports,o,o.exports,r),o.loaded=!0,o.exports}var t={};return r.m=e,r.c=t,r.p="",r(0)}([function(e,r,t){"use strict";function n(e){return e&&e.__esModule?e:{default:e}}function o(e){var r=e.inputElement,t=(0,u.default)(e),n=function(e){var r=e.target.value;return t.update(r)};return r.addEventListener("input",n),t.update(r.value),{textMaskInputElement:t,destroy:function(){r.removeEventListener("input",n)}}}Object.defineProperty(r,"__esModule",{value:!0}),r.conformToMask=void 0,r.maskInput=o;var i=t(2);Object.defineProperty(r,"conformToMask",{enumerable:!0,get:function(){return n(i).default}});var a=t(5),u=n(a);r.default=o},function(e,r){"use strict";Object.defineProperty(r,"__esModule",{value:!0}),r.placeholderChar="_"},function(e,r,t){"use strict";function n(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:a,r=arguments.length>1&&void 0!==arguments[1]?arguments[1]:a,t=arguments.length>2&&void 0!==arguments[2]?arguments[2]:{},n=t.guide,u=void 0===n||n,l=t.previousConformedValue,s=void 0===l?a:l,f=t.placeholderChar,d=void 0===f?i.placeholderChar:f,c=t.placeholder,v=void 0===c?(0,o.convertMaskToPlaceholder)(r,d):c,p=t.currentCaretPosition,h=t.keepCharPositions,g=u===!1&&void 0!==s,m=e.length,y=s.length,b=v.length,C=r.length,P=m-y,x=P>0,k=p+(x?-P:0),O=k+Math.abs(P);if(h===!0&&!x){for(var M=a,T=k;T<O;T++)v[T]===d&&(M+=d);e=e.slice(0,k)+M+e.slice(k,m)}for(var w=e.split(a).map(function(e,r){return{char:e,isNew:r>=k&&r<O}}),_=m-1;_>=0;_--){var j=w[_].char;if(j!==d){var V=_>=k&&y===C;j===v[V?_-P:_]&&w.splice(_,1)}}var S=a,E=!1;e:for(var N=0;N<b;N++){var A=v[N];if(A===d){if(w.length>0)for(;w.length>0;){var I=w.shift(),L=I.char,R=I.isNew;if(L===d&&g!==!0){S+=d;continue e}if(r[N].test(L)){if(h===!0&&R!==!1&&s!==a&&u!==!1&&x){for(var J=w.length,q=null,F=0;F<J;F++){var W=w[F];if(W.char!==d&&W.isNew===!1)break;if(W.char===d){q=F;break}}null!==q?(S+=L,w.splice(q,1)):N--}else S+=L;continue e}E=!0}g===!1&&(S+=v.substr(N,b));break}S+=A}if(g&&x===!1){for(var z=null,B=0;B<S.length;B++)v[B]===d&&(z=B);S=null!==z?S.substr(0,z+1):a}return{conformedValue:S,meta:{someCharsRejected:E}}}Object.defineProperty(r,"__esModule",{value:!0}),r.default=n;var o=t(3),i=t(1),a=""},function(e,r,t){"use strict";function n(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:l,r=arguments.length>1&&void 0!==arguments[1]?arguments[1]:u.placeholderChar;if(e.indexOf(r)!==-1)throw new Error("Placeholder character must not be used as part of the mask. Please specify a character that is not present in your mask as your placeholder character.\n\n"+("The placeholder character that was received is: "+JSON.stringify(r)+"\n\n")+("The mask that was received is: "+JSON.stringify(e)));return e.map(function(e){return e instanceof RegExp?r:e}).join("")}function o(e){return"string"==typeof e||e instanceof String}function i(e){return"number"==typeof e&&void 0===e.length&&!isNaN(e)}function a(e){for(var r=[],t=void 0;t=e.indexOf(s),t!==-1;)r.push(t),e.splice(t,1);return{maskWithoutCaretTraps:e,indexes:r}}Object.defineProperty(r,"__esModule",{value:!0}),r.convertMaskToPlaceholder=n,r.isString=o,r.isNumber=i,r.processCaretTraps=a;var u=t(1),l=[],s="[]"},function(e,r){"use strict";function t(e){var r=e.previousConformedValue,t=void 0===r?o:r,i=e.previousPlaceholder,a=void 0===i?o:i,u=e.currentCaretPosition,l=void 0===u?0:u,s=e.conformedValue,f=e.rawValue,d=e.placeholderChar,c=e.placeholder,v=e.indexesOfPipedChars,p=void 0===v?n:v,h=e.caretTrapIndexes,g=void 0===h?n:h;if(0===l)return 0;var m=f.length,y=t.length,b=c.length,C=s.length,P=m-y,x=P>0,k=0===y,O=P>1&&!x&&!k;if(O)return l;var M=x&&(t===s||s===c),T=0,w=void 0,_=void 0;if(M)T=l-P;else{var j=s.toLowerCase(),V=f.toLowerCase(),S=V.substr(0,l).split(o),E=S.filter(function(e){return j.indexOf(e)!==-1});_=E[E.length-1];var N=a.substr(0,E.length).split(o).filter(function(e){return e!==d}).length,A=c.substr(0,E.length).split(o).filter(function(e){return e!==d}).length,I=A!==N,L=void 0!==a[E.length-1]&&void 0!==c[E.length-2]&&a[E.length-1]!==d&&a[E.length-1]!==c[E.length-1]&&a[E.length-1]===c[E.length-2];!x&&(I||L)&&N>0&&c.indexOf(_)>-1&&void 0!==f[l]&&(w=!0,_=f[l]);for(var R=p.map(function(e){return j[e]}),J=R.filter(function(e){return e===_}).length,q=E.filter(function(e){return e===_}).length,F=c.substr(0,c.indexOf(d)).split(o).filter(function(e,r){return e===_&&f[r]!==e}).length,W=F+q+J+(w?1:0),z=0,B=0;B<C;B++){var D=j[B];if(T=B+1,D===_&&z++,z>=W)break}}if(x){for(var G=T,H=T;H<=b;H++)if(c[H]===d&&(G=H),c[H]===d||g.indexOf(H)!==-1||H===b)return G}else if(w){for(var K=T-1;K>=0;K--)if(s[K]===_||g.indexOf(K)!==-1||0===K)return K}else for(var Q=T;Q>=0;Q--)if(c[Q-1]===d||g.indexOf(Q)!==-1||0===Q)return Q}Object.defineProperty(r,"__esModule",{value:!0}),r.default=t;var n=[],o=""},function(e,r,t){"use strict";function n(e){return e&&e.__esModule?e:{default:e}}function o(e){var r={previousConformedValue:void 0,previousPlaceholder:void 0};return{state:r,update:function(t){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:e,o=n.inputElement,s=n.mask,d=n.guide,m=n.pipe,b=n.placeholderChar,C=void 0===b?p.placeholderChar:b,P=n.keepCharPositions,x=void 0!==P&&P,k=n.showMask,O=void 0!==k&&k;if("undefined"==typeof t&&(t=o.value),t!==r.previousConformedValue){("undefined"==typeof s?"undefined":l(s))===y&&void 0!==s.pipe&&void 0!==s.mask&&(m=s.pipe,s=s.mask);var M=void 0,T=void 0;if(s instanceof Array&&(M=(0,v.convertMaskToPlaceholder)(s,C)),s!==!1){var w=a(t),_=o.selectionEnd,j=r.previousConformedValue,V=r.previousPlaceholder,S=void 0;if(("undefined"==typeof s?"undefined":l(s))===h){if(T=s(w,{currentCaretPosition:_,previousConformedValue:j,placeholderChar:C}),T===!1)return;var E=(0,v.processCaretTraps)(T),N=E.maskWithoutCaretTraps,A=E.indexes;T=N,S=A,M=(0,v.convertMaskToPlaceholder)(T,C)}else T=s;var I={previousConformedValue:j,guide:d,placeholderChar:C,pipe:m,placeholder:M,currentCaretPosition:_,keepCharPositions:x},L=(0,c.default)(w,T,I),R=L.conformedValue,J=("undefined"==typeof m?"undefined":l(m))===h,q={};J&&(q=m(R,u({rawValue:w},I)),q===!1?q={value:j,rejected:!0}:(0,v.isString)(q)&&(q={value:q}));var F=J?q.value:R,W=(0,f.default)({previousConformedValue:j,previousPlaceholder:V,conformedValue:F,placeholder:M,rawValue:w,currentCaretPosition:_,placeholderChar:C,indexesOfPipedChars:q.indexesOfPipedChars,caretTrapIndexes:S}),z=F===M&&0===W,B=O?M:g,D=z?B:F;r.previousConformedValue=D,r.previousPlaceholder=M,o.value!==D&&(o.value=D,i(o,W))}}}}}function i(e,r){document.activeElement===e&&(b?C(function(){return e.setSelectionRange(r,r,m)},0):e.setSelectionRange(r,r,m))}function a(e){if((0,v.isString)(e))return e;if((0,v.isNumber)(e))return String(e);if(void 0===e||null===e)return g;throw new Error("The 'value' provided to Text Mask needs to be a string or a number. The value received was:\n\n "+JSON.stringify(e))}Object.defineProperty(r,"__esModule",{value:!0});var u=Object.assign||function(e){for(var r=1;r<arguments.length;r++){var t=arguments[r];for(var n in t)Object.prototype.hasOwnProperty.call(t,n)&&(e[n]=t[n])}return e},l="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e};r.default=o;var s=t(4),f=n(s),d=t(2),c=n(d),v=t(3),p=t(1),h="function",g="",m="none",y="object",b="undefined"!=typeof navigator&&/Android/i.test(navigator.userAgent),C="undefined"!=typeof requestAnimationFrame?requestAnimationFrame:setTimeout}])});
-},{}],271:[function(_dereq_,module,exports){
+},{}],270:[function(_dereq_,module,exports){
 (function(self) {
   'use strict';
 
@@ -60644,7 +60815,7 @@ return Tooltip;
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-},{}],272:[function(_dereq_,module,exports){
+},{}],271:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -60752,7 +60923,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],273:[function(_dereq_,module,exports){
+},{}],272:[function(_dereq_,module,exports){
 "use strict";
 
 var _merge = _dereq_('lodash/merge');
@@ -60784,6 +60955,7 @@ module.exports = function(app) {
           $scope.getButtonType = function() {
             switch (settings.action) {
               case 'submit':
+              case 'saveState':
                 return 'submit';
               case 'reset':
                 return 'reset';
@@ -60791,19 +60963,21 @@ module.exports = function(app) {
               case 'custom':
               case 'oauth':
               case 'url':
+              case 'delete':
               default:
                 return 'button';
             }
           };
 
           $scope.hasError = function() {
-            if (clicked && (settings.action === 'submit') && $scope.formioForm.$invalid && !$scope.formioForm.$pristine) {
+            if (clicked && (settings.action === 'submit') && $scope.formioForm.$invalid) {
               $scope.disableBtn = true;
               return true;
-            } else {
+            }
+            else {
               clicked = false;
               $scope.disableBtn = false;
-              return false
+              return false;
             }
           };
 
@@ -60831,6 +61005,10 @@ module.exports = function(app) {
             $scope.data[$scope.component.key] = true;
             switch (settings.action) {
               case 'submit':
+                $scope.submission.state = 'submitted';
+                return;
+              case 'saveState':
+                $scope.submission.state = $scope.component.state;
                 return;
               case 'event':
                 $scope.$emit($scope.component.event, $scope.data);
@@ -60843,6 +61021,9 @@ module.exports = function(app) {
                 break;
               case 'reset':
                 $scope.resetForm();
+                break;
+              case 'delete':
+                $scope.deleteSubmission();
                 break;
               case 'oauth':
                 if (!settings.oauth) {
@@ -60983,7 +61164,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"lodash/merge":255}],274:[function(_dereq_,module,exports){
+},{"lodash/merge":254}],273:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -61068,7 +61249,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],275:[function(_dereq_,module,exports){
+},{}],274:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -61162,7 +61343,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],276:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],275:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function(app) {
   app.provider('formioComponents', function() {
@@ -61234,7 +61415,7 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],277:[function(_dereq_,module,exports){
+},{}],276:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -61306,7 +61487,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],278:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],277:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -61335,7 +61516,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],279:[function(_dereq_,module,exports){
+},{}],278:[function(_dereq_,module,exports){
 "use strict";
 
 var createNumberMask = _dereq_('text-mask-addons').createNumberMask;
@@ -61423,7 +61604,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"lodash/get":226,"lodash/isNil":241,"text-mask-addons":268}],280:[function(_dereq_,module,exports){
+},{"lodash/get":225,"lodash/isNil":240,"text-mask-addons":267}],279:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -61451,7 +61632,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],281:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],280:[function(_dereq_,module,exports){
 "use strict";
 
 var formioUtils = _dereq_('formiojs/utils');
@@ -61611,13 +61792,13 @@ module.exports = function(app) {
     'FormioUtils',
     function($templateCache, FormioUtils) {
       $templateCache.put('formio/components/datagrid.html', FormioUtils.fieldWrap(
-        "<div class=\"formio-data-grid\" ng-model=\"dataValue[componentId]\" custom-validator=\"component.validate.custom\" datagrid-validation ng-controller=\"formioDataGrid\">\n  <table ng-class=\"{'table-striped': component.striped, 'table-bordered': component.bordered, 'table-hover': component.hover, 'table-condensed': component.condensed}\" class=\"table datagrid-table\">\n    <thead>\n      <tr>\n        <th\n          ng-repeat=\"col in cols track by $index\"\n          ng-class=\"{'field-required': col.validate.required}\"\n          ng-if=\"options.building ? '::true' : anyVisible(col)\"\n        ><span ng-if=\"!col.dataGridLabel && (col.input || !col.hideLabel)\">{{ col.label | formioTranslate:null:options.building }}</span></th>\n        <th style=\"padding-left: 9px;\">\n          <div style=\"padding: 0; margin-bottom: 0;\" class=\"datagrid-add\" ng-if=\"(!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || rows.length < component.validate.maxLength) && (component.addAnotherPosition === 'top' || component.addAnotherPosition === 'both')\">\n            <a ng-click=\"(readOnly || formioForm.submitting)? null: addRow() \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-primary\">\n              <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ \"\" | formioTranslate:null:options.building }}\n            </a>\n          </div>\n        </th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr ng-repeat=\"row in rows track by $index\" ng-init=\"rowIndex = $index\">\n        <td ng-repeat=\"col in cols track by $index\" ng-init=\"col.inDataGrid = true; colIndex = $index\" class=\"formio-data-grid-row\" ng-if=\"options.building ? '::true' : anyVisible(col)\">\n          <formio-component\n            component=\"col\"\n            data=\"rows[rowIndex]\"\n            form-name=\"formName\"\n            formio=\"formio\"\n            submission=\"submission\"\n            hide-components=\"hideComponents\"\n            ng-if=\"options.building ? '::true' : isVisible(col, row)\"\n            read-only=\"isDisabled(col, row)\"\n            grid-row=\"rowIndex\"\n            grid-col=\"colIndex\"\n            options=\"options\"\n          ></formio-component>\n        </td>\n        <td ng-if=\"!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('minLength') || rows.length > component.validate.minLength\">\n          <a ng-click=\"(readOnly || formioForm.submitting)? null: removeRow(rowIndex) \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-default\">\n            <span class=\"glyphicon glyphicon-remove-circle\"></span>\n          </a>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n  <div style=\"margin-top: 10px\" class=\"datagrid-add\" ng-if=\"(!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || rows.length < component.validate.maxLength) && (!component.addAnotherPosition || component.addAnotherPosition === 'bottom' || component.addAnotherPosition === 'both')\">\n    <a ng-click=\"(readOnly || formioForm.submitting)? null: addRow() \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-primary\">\n      <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ component.addAnother || \"Add Another\" | formioTranslate:null:options.building }}\n    </a>\n  </div>\n</div>\n\n\n"
+        "<div name=\"{{ componentId }}\" class=\"formio-data-grid\" ng-model=\"dataValue[componentId]\" custom-validator=\"component.validate.custom\" datagrid-validation ng-controller=\"formioDataGrid\">\n  <table ng-class=\"{'table-striped': component.striped, 'table-bordered': component.bordered, 'table-hover': component.hover, 'table-condensed': component.condensed}\" class=\"table datagrid-table\">\n    <thead>\n      <tr>\n        <th\n          ng-repeat=\"col in cols track by $index\"\n          ng-class=\"{'field-required': col.validate.required}\"\n          ng-if=\"options.building ? '::true' : anyVisible(col)\"\n        ><span ng-if=\"!col.dataGridLabel && (col.input || !col.hideLabel)\">{{ col.label | formioTranslate:null:options.building }}</span></th>\n        <th style=\"padding-left: 9px;\">\n          <div style=\"padding: 0; margin-bottom: 0;\" class=\"datagrid-add\" ng-if=\"(!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || rows.length < component.validate.maxLength) && (component.addAnotherPosition === 'top' || component.addAnotherPosition === 'both')\">\n            <a ng-click=\"(readOnly || formioForm.submitting)? null: addRow() \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-primary\">\n              <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ \"\" | formioTranslate:null:options.building }}\n            </a>\n          </div>\n        </th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr ng-repeat=\"row in rows track by $index\" ng-init=\"rowIndex = $index\">\n        <td ng-repeat=\"col in cols track by $index\" ng-init=\"col.inDataGrid = true; colIndex = $index\" class=\"formio-data-grid-row\" ng-if=\"options.building ? '::true' : anyVisible(col)\">\n          <formio-component\n            component=\"col\"\n            data=\"rows[rowIndex]\"\n            form-name=\"formName\"\n            formio=\"formio\"\n            submission=\"submission\"\n            hide-components=\"hideComponents\"\n            ng-if=\"options.building ? '::true' : isVisible(col, row)\"\n            read-only=\"isDisabled(col, row)\"\n            grid-row=\"rowIndex\"\n            grid-col=\"colIndex\"\n            options=\"options\"\n          ></formio-component>\n        </td>\n        <td ng-if=\"!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('minLength') || rows.length > component.validate.minLength\">\n          <a ng-click=\"(readOnly || formioForm.submitting)? null: removeRow(rowIndex) \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-default\">\n            <span class=\"glyphicon glyphicon-remove-circle\"></span>\n          </a>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n  <div style=\"margin-top: 10px\" class=\"datagrid-add\" ng-if=\"(!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || !component.validate.maxLength || rows.length < component.validate.maxLength) && (!component.addAnotherPosition || component.addAnotherPosition === 'bottom' || component.addAnotherPosition === 'both')\">\n    <a ng-click=\"(readOnly || formioForm.submitting)? null: addRow() \" ng-disabled = \"readOnly || formioForm.submitting\" class=\"btn btn-primary\">\n      <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ component.addAnother || \"Add Another\" | formioTranslate:null:options.building }}\n    </a>\n  </div>\n</div>\n\n\n"
       ));
     }
   ]);
 };
 
-},{"formiojs/utils":63}],282:[function(_dereq_,module,exports){
+},{"formiojs/utils":63}],281:[function(_dereq_,module,exports){
 "use strict";
 
 var _get = _dereq_('lodash/get');
@@ -61735,7 +61916,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"lodash/get":226}],283:[function(_dereq_,module,exports){
+},{"lodash/get":225}],282:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -61987,7 +62168,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],284:[function(_dereq_,module,exports){
+},{}],283:[function(_dereq_,module,exports){
 "use strict";
 
 var formioUtils = _dereq_('formiojs/utils');
@@ -62408,12 +62589,12 @@ module.exports = function(app) {
     '$templateCache',
     'FormioUtils',
     function($templateCache, FormioUtils) {
-      $templateCache.put('formio/components/editgrid.html', "<div name=\"{{ componentId }}\" ng-model=\"data[component.key]\" custom-validator=\"component.validate.custom\" editgrid-validation ng-controller=\"formioEditGrid\">\n  <label ng-if=\"labelVisible()\" for=\"{{ component.key }}\" class=\"control-label\" ng-class=\"{'field-required': isRequired(component)}\">\n    {{ component.label | formioTranslate:null:options.building }}\n    <formio-component-tooltip></formio-component-tooltip>\n  </label>\n  <div class=\"formio-data-grid\" id=\"formio-editgrid-{{ component.key }}\">\n    <ul class=\"list-group\">\n      <li ng-if=\"component.templates.header\" class=\"list-group-item list-group-header\">\n        <render-template template=\"component.templates.header\" data=\"headerData\" />\n      </li>\n      <li class=\"list-group-item\" ng-repeat=\"row in rows track by $index\" ng-init=\"rowIndex = $index\">\n        <div name=\"{{ componentId }}-row-{{ $index }}\" ng-model=\"row\" editgrid-row-validation>\n          <edit-grid-row />\n          <p class=\"help-block\" ng-show=\"openRows.indexOf($index) !== -1 && formioForm.$error.editgrid\">{{ 'Please save all rows before proceeding' | formioTranslate }}.</p>\n          <p class=\"help-block\" ng-show=\"formioForm[componentId + '-row-' + $index].$error.editgridrow\">{{ 'Please correct rows before proceeding' | formioTranslate }}.</p>\n        </div>\n      </li>\n      <li ng-if=\"component.templates.footer\" class=\"list-group-item list-group-footer\">\n        <render-template template=\"component.templates.footer\" data=\"headerData\" />\n      </li>\n    </ul>\n    <div class=\"datagrid-add\" ng-if=\"!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || rows.length < component.validate.maxLength\">\n      <a ng-click=\"addRow()\" class=\"btn btn-primary\">\n        <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ component.addAnother || \"Add Another\" | formioTranslate:null:options.building }}\n      </a>\n    </div>\n  </div>\n</div>\n");
+      $templateCache.put('formio/components/editgrid.html', "<div name=\"{{ componentId }}\" ng-model=\"data[component.key]\" custom-validator=\"component.validate.custom\" editgrid-validation ng-controller=\"formioEditGrid\">\n  <label ng-if=\"labelVisible()\" for=\"{{ component.key }}\" class=\"control-label\" ng-class=\"{'field-required': isRequired(component)}\">\n    {{ component.label | formioTranslate:null:options.building }}\n    <formio-component-tooltip></formio-component-tooltip>\n  </label>\n  <div class=\"formio-data-grid\" id=\"formio-editgrid-{{ component.key }}\">\n    <ul class=\"list-group\">\n      <li ng-if=\"component.templates.header\" class=\"list-group-item list-group-header\">\n        <render-template template=\"component.templates.header\" data=\"headerData\" />\n      </li>\n      <li class=\"list-group-item\" ng-repeat=\"row in rows track by $index\" ng-init=\"rowIndex = $index\">\n        <div name=\"{{ componentId }}-row-{{ $index }}\" ng-model=\"row\" editgrid-row-validation>\n          <edit-grid-row />\n          <p class=\"help-block\" ng-show=\"openRows.indexOf($index) !== -1 && formioForm.$error.editgrid\">{{ 'Please save all rows before proceeding' | formioTranslate }}.</p>\n          <p class=\"help-block\" ng-show=\"formioForm[componentId + '-row-' + $index].$error.editgridrow\">{{ 'Please correct rows before proceeding' | formioTranslate }}.</p>\n        </div>\n      </li>\n      <li ng-if=\"component.templates.footer\" class=\"list-group-item list-group-footer\">\n        <render-template template=\"component.templates.footer\" data=\"headerData\" />\n      </li>\n    </ul>\n    <div class=\"datagrid-add\" ng-if=\"!component.hasOwnProperty('validate') || !component.validate.hasOwnProperty('maxLength') || rows.length < component.validate.maxLength\">\n      <a ng-click=\"addRow()\" class=\"btn btn-primary\">\n        <span class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\"></span> {{ component.addAnother || \"Add Another\" | formioTranslate:null:options.building }}\n      </a>\n    </div>\n  </div>\n  <formio-errors ng-if=\"::!options.building\"></formio-errors>\n</div>\n");
     }
   ]);
 };
 
-},{"formiojs/utils":63}],285:[function(_dereq_,module,exports){
+},{"formiojs/utils":63}],284:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function(app) {
   app.config([
@@ -62448,7 +62629,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],286:[function(_dereq_,module,exports){
+},{}],285:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -62492,19 +62673,7 @@ module.exports = function(app) {
 
           view += '</tbody></table>';
           return view;
-        },
-        controller: [
-          '$scope',
-          function(
-            $scope
-          ) {
-            $scope.collapsed = !!$scope.component.collapsed;
-
-            $scope.toggleCollapsed = function() {
-              $scope.collapsed = !$scope.collapsed;
-            };
-          }
-        ]
+        }
       });
     }
   ]);
@@ -62512,7 +62681,7 @@ module.exports = function(app) {
     '$templateCache',
     function($templateCache) {
       $templateCache.put('formio/components/fieldset.html',
-        "<fieldset id=\"formio-fieldset-{{ component.key }}\">\n  <legend ng-if=\"component.legend\" ng-class=\"{'formio-clickable': component.collapsible}\" ng-click=\"toggleCollapsed()\">\n    {{ component.legend | formioTranslate:null:options.building }}\n    <formio-component-tooltip></formio-component-tooltip>\n  </legend>\n  <div class=\"card-body\" ng-hide=\"collapsed\">\n    <formio-component\n      ng-repeat=\"_component in component.components track by $index\"\n      component=\"_component\"\n      data=\"data\"\n      formio=\"formio\"\n      submission=\"submission\"\n      hide-components=\"hideComponents\"\n      ng-if=\"options.building ? '::true' : isVisible(_component, data)\"\n      read-only=\"isDisabled(_component, data)\"\n      form-name=\"formName\"\n      grid-row=\"gridRow\"\n      grid-col=\"gridCol\"\n      options=\"options\"\n    ></formio-component>\n  </div>\n</fieldset>\n"
+        "<fieldset id=\"formio-fieldset-{{ component.key }}\">\n  <legend ng-if=\"component.legend\">\n    {{ component.legend | formioTranslate:null:options.building }}\n    <formio-component-tooltip></formio-component-tooltip>\n  </legend>\n  <formio-component\n    ng-repeat=\"_component in component.components track by $index\"\n    component=\"_component\"\n    data=\"data\"\n    formio=\"formio\"\n    submission=\"submission\"\n    hide-components=\"hideComponents\"\n    ng-if=\"options.building ? '::true' : isVisible(_component, data)\"\n    read-only=\"isDisabled(_component, data)\"\n    form-name=\"formName\"\n    grid-row=\"gridRow\"\n    grid-col=\"gridCol\"\n    options=\"options\"\n  ></formio-component>\n</fieldset>\n"
       );
 
       $templateCache.put('formio/componentsView/fieldset.html',
@@ -62522,7 +62691,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],287:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],286:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -62874,7 +63043,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],288:[function(_dereq_,module,exports){
+},{}],287:[function(_dereq_,module,exports){
 "use strict";
 
 var isEmpty = _dereq_('lodash/isEmpty');
@@ -63064,7 +63233,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326,"lodash/isEmpty":234}],289:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325,"lodash/isEmpty":233}],288:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -63100,7 +63269,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],290:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],289:[function(_dereq_,module,exports){
 "use strict";
 
 
@@ -63194,7 +63363,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],291:[function(_dereq_,module,exports){
+},{}],290:[function(_dereq_,module,exports){
 "use strict";
 var app = angular.module('formio');
 
@@ -63239,7 +63408,7 @@ _dereq_('./panel')(app);
 _dereq_('./table')(app);
 _dereq_('./well')(app);
 
-},{"./address":272,"./button":273,"./checkbox":274,"./columns":275,"./components":276,"./container":277,"./content":278,"./currency":279,"./custom":280,"./datagrid":281,"./datetime":282,"./day":283,"./editgrid":284,"./email":285,"./fieldset":286,"./file":287,"./form":288,"./hidden":289,"./htmlelement":290,"./number":292,"./page":293,"./panel":294,"./password":295,"./phonenumber":296,"./radio":297,"./resource":298,"./select":299,"./selectboxes":300,"./signature":301,"./survey":302,"./table":303,"./textarea":304,"./textfield":305,"./time":306,"./well":307}],292:[function(_dereq_,module,exports){
+},{"./address":271,"./button":272,"./checkbox":273,"./columns":274,"./components":275,"./container":276,"./content":277,"./currency":278,"./custom":279,"./datagrid":280,"./datetime":281,"./day":282,"./editgrid":283,"./email":284,"./fieldset":285,"./file":286,"./form":287,"./hidden":288,"./htmlelement":289,"./number":291,"./page":292,"./panel":293,"./password":294,"./phonenumber":295,"./radio":296,"./resource":297,"./select":298,"./selectboxes":299,"./signature":300,"./survey":301,"./table":302,"./textarea":303,"./textfield":304,"./time":305,"./well":306}],291:[function(_dereq_,module,exports){
 "use strict";
 
 var createNumberMask = _dereq_('text-mask-addons').createNumberMask;
@@ -63336,7 +63505,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"lodash/get":226,"lodash/isNil":241,"text-mask-addons":268}],293:[function(_dereq_,module,exports){
+},{"lodash/get":225,"lodash/isNil":240,"text-mask-addons":267}],292:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -63363,7 +63532,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],294:[function(_dereq_,module,exports){
+},{}],293:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -63408,19 +63577,7 @@ module.exports = function(app) {
 
           view += '</tbody></table>';
           return view;
-        },
-        controller: [
-          '$scope',
-          function(
-            $scope
-          ) {
-            $scope.collapsed = !!$scope.component.collapsed;
-
-            $scope.toggleCollapsed = function() {
-              $scope.collapsed = !$scope.collapsed;
-            };
-          }
-        ]
+        }
       });
     }
   ]);
@@ -63428,7 +63585,7 @@ module.exports = function(app) {
     '$templateCache',
     function($templateCache) {
       $templateCache.put('formio/components/panel.html',
-        "<div class=\"panel panel-{{ component.theme }}\" id=\"formio-panel-{{ component.key }}\">\n  <div ng-if=\"component.title\" class=\"panel-heading\" ng-class=\"{'formio-clickable': component.collapsible}\" ng-click=\"toggleCollapsed()\">\n    <h3 class=\"panel-title\">\n      {{ component.title | formioTranslate:null:options.building }}\n      <formio-component-tooltip></formio-component-tooltip>\n    </h3>\n  </div>\n  <div class=\"panel-body\" ng-hide=\"collapsed\">\n    <formio-component\n      ng-repeat=\"_component in component.components track by $index\"\n      component=\"_component\"\n      data=\"data\"\n      formio=\"formio\"\n      submission=\"submission\"\n      hide-components=\"hideComponents\"\n      ng-if=\"options.building ? '::true' : isVisible(_component, data)\"\n      read-only=\"isDisabled(_component, data)\"\n      form-name=\"formName\"\n      grid-row=\"gridRow\"\n      grid-col=\"gridCol\"\n      options=\"options\"\n    ></formio-component>\n  </div>\n</div>\n"
+        "<div class=\"panel panel-{{ component.theme }}\" id=\"formio-panel-{{ component.key }}\">\n  <div ng-if=\"component.title\" class=\"panel-heading\">\n    <h3 class=\"panel-title\">\n      {{ component.title | formioTranslate:null:options.building }}\n      <formio-component-tooltip></formio-component-tooltip>\n    </h3>\n  </div>\n  <div class=\"panel-body\">\n    <formio-component\n      ng-repeat=\"_component in component.components track by $index\"\n      component=\"_component\"\n      data=\"data\"\n      formio=\"formio\"\n      submission=\"submission\"\n      hide-components=\"hideComponents\"\n      ng-if=\"options.building ? '::true' : isVisible(_component, data)\"\n      read-only=\"isDisabled(_component, data)\"\n      form-name=\"formName\"\n      grid-row=\"gridRow\"\n      grid-col=\"gridCol\"\n      options=\"options\"\n    ></formio-component>\n  </div>\n</div>\n"
       );
 
       $templateCache.put('formio/componentsView/panel.html',
@@ -63438,7 +63595,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],295:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],294:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function(app) {
   app.config([
@@ -63470,7 +63627,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],296:[function(_dereq_,module,exports){
+},{}],295:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function(app) {
   app.config([
@@ -63507,7 +63664,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],297:[function(_dereq_,module,exports){
+},{}],296:[function(_dereq_,module,exports){
 "use strict";
 
 
@@ -63560,7 +63717,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],298:[function(_dereq_,module,exports){
+},{}],297:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -63810,7 +63967,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],299:[function(_dereq_,module,exports){
+},{}],298:[function(_dereq_,module,exports){
 "use strict";
 /*eslint max-depth: ["error", 6]*/
 
@@ -64426,7 +64583,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"lodash/assign":221,"lodash/cloneDeep":222,"lodash/get":226,"lodash/isEqual":235,"lodash/isNil":241,"lodash/mapValues":253,"lodash/set":257}],300:[function(_dereq_,module,exports){
+},{"lodash/assign":220,"lodash/cloneDeep":221,"lodash/get":225,"lodash/isEqual":234,"lodash/isNil":240,"lodash/mapValues":252,"lodash/set":256}],299:[function(_dereq_,module,exports){
 "use strict";
 
 
@@ -64552,7 +64709,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],301:[function(_dereq_,module,exports){
+},{}],300:[function(_dereq_,module,exports){
 "use strict";
 
 var SignaturePad = _dereq_('signature_pad');
@@ -64694,7 +64851,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"signature_pad":267}],302:[function(_dereq_,module,exports){
+},{"signature_pad":266}],301:[function(_dereq_,module,exports){
 "use strict";
 
 
@@ -64755,7 +64912,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],303:[function(_dereq_,module,exports){
+},{}],302:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -64841,7 +64998,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],304:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],303:[function(_dereq_,module,exports){
 "use strict";
 
 module.exports = function(app) {
@@ -64982,7 +65139,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],305:[function(_dereq_,module,exports){
+},{}],304:[function(_dereq_,module,exports){
 "use strict";
 
 
@@ -65045,7 +65202,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{}],306:[function(_dereq_,module,exports){
+},{}],305:[function(_dereq_,module,exports){
 "use strict";
 
 var moment = _dereq_('moment');
@@ -65118,7 +65275,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"moment":262}],307:[function(_dereq_,module,exports){
+},{"moment":261}],306:[function(_dereq_,module,exports){
 "use strict";
 
 var GridUtils = _dereq_('../factories/GridUtils')();
@@ -65178,7 +65335,7 @@ module.exports = function(app) {
   ]);
 };
 
-},{"../factories/GridUtils":326}],308:[function(_dereq_,module,exports){
+},{"../factories/GridUtils":325}],307:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -65257,7 +65414,7 @@ module.exports = function() {
   };
 };
 
-},{}],309:[function(_dereq_,module,exports){
+},{}],308:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -65675,8 +65832,7 @@ module.exports = function() {
         $scope.onSubmit = function(form) {
 
           $scope.formioAlerts = [];
-          $element.find('.has-error').removeClass('has-error');
-          if ($scope.checkErrors(form)) {
+          if ($scope.submission.state !== 'draft' && $scope.checkErrors(form)) {
             $scope.formioAlerts.push({
               type: 'danger',
               message: 'Please fix the following errors before submitting.'
@@ -65709,6 +65865,9 @@ module.exports = function() {
             }
             if ($scope.submission.owner) {
               submissionData.owner = $scope.submission.owner;
+            }
+            if ($scope.submission.state) {
+              submissionData.state = $scope.submission.state;
             }
             if ($scope.submission.data._id) {
               submissionData._id = $scope.submission.data._id;
@@ -65813,7 +65972,7 @@ module.exports = function() {
   };
 };
 
-},{}],310:[function(_dereq_,module,exports){
+},{}],309:[function(_dereq_,module,exports){
 "use strict";
 module.exports = ['$sce', '$parse', '$compile', function($sce, $parse, $compile) {
   return {
@@ -65830,7 +65989,7 @@ module.exports = ['$sce', '$parse', '$compile', function($sce, $parse, $compile)
   };
 }];
 
-},{}],311:[function(_dereq_,module,exports){
+},{}],310:[function(_dereq_,module,exports){
 "use strict";
 var _get = _dereq_('lodash/get');
 var moment = _dereq_('moment');
@@ -65930,6 +66089,13 @@ module.exports = [
                 $scope.formioForm[compKey].$setUntouched();
               }
             }
+          };
+
+          $scope.deleteSubmission = function() {
+            $scope.formio.deleteSubmission()
+              .then(function() {
+                $scope.$emit('formSubmissionDelete', $scope.submission);
+              });
           };
 
           $scope.isDisabled = function(component) {
@@ -66105,11 +66271,11 @@ module.exports = [
                   try {
                     if (valid !== true) {
                       $scope.component.customError = valid;
-                      $scope.formioForm[$scope.component.key].$setValidity('custom', false);
+                      $scope.formioForm[$scope.componentId].$setValidity('custom', false);
                       return;
                     }
 
-                    $scope.formioForm[$scope.component.key].$setValidity('custom', true);
+                    $scope.formioForm[$scope.componentId].$setValidity('custom', true);
                   }
                   catch (e) {
                     // Ignore any issues while editing the components.
@@ -66198,7 +66364,7 @@ module.exports = [
   }
 ];
 
-},{"lodash/get":226,"moment":262}],312:[function(_dereq_,module,exports){
+},{"lodash/get":225,"moment":261}],311:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66214,7 +66380,7 @@ module.exports = function() {
   };
 };
 
-},{}],313:[function(_dereq_,module,exports){
+},{}],312:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'formioComponents',
@@ -66287,7 +66453,7 @@ module.exports = [
   }
 ];
 
-},{}],314:[function(_dereq_,module,exports){
+},{}],313:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66372,7 +66538,7 @@ module.exports = function() {
   };
 };
 
-},{}],315:[function(_dereq_,module,exports){
+},{}],314:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   '$compile',
@@ -66391,7 +66557,7 @@ module.exports = [
   }
 ];
 
-},{}],316:[function(_dereq_,module,exports){
+},{}],315:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66401,7 +66567,7 @@ module.exports = function() {
   };
 };
 
-},{}],317:[function(_dereq_,module,exports){
+},{}],316:[function(_dereq_,module,exports){
 "use strict";
 var maskInput = _dereq_('vanilla-text-mask').default;
 var createNumberMask = _dereq_('text-mask-addons').createNumberMask;
@@ -66586,7 +66752,7 @@ module.exports = ['FormioUtils', function(FormioUtils) {
   };
 }];
 
-},{"formiojs/utils":63,"lodash":251,"text-mask-addons":268,"vanilla-text-mask":270}],318:[function(_dereq_,module,exports){
+},{"formiojs/utils":63,"lodash":250,"text-mask-addons":267,"vanilla-text-mask":269}],317:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66613,7 +66779,7 @@ module.exports = function() {
     }
   };
 };
-},{}],319:[function(_dereq_,module,exports){
+},{}],318:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66641,7 +66807,7 @@ module.exports = function() {
   };
 };
 
-},{}],320:[function(_dereq_,module,exports){
+},{}],319:[function(_dereq_,module,exports){
 "use strict";
 var _map = _dereq_('lodash/map');
 // Javascript editor directive
@@ -66717,7 +66883,7 @@ module.exports = ['FormioUtils', function(FormioUtils) {
   };
 }];
 
-},{"lodash/map":252}],321:[function(_dereq_,module,exports){
+},{"lodash/map":251}],320:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66749,7 +66915,7 @@ module.exports = function() {
   };
 };
 
-},{}],322:[function(_dereq_,module,exports){
+},{}],321:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   return {
@@ -66805,7 +66971,7 @@ module.exports = function() {
   };
 };
 
-},{}],323:[function(_dereq_,module,exports){
+},{}],322:[function(_dereq_,module,exports){
 "use strict";
 var isNaN = _dereq_('lodash/isNaN');
 var isFinite = _dereq_('lodash/isFinite');
@@ -67421,7 +67587,7 @@ module.exports = function() {
   };
 };
 
-},{"lodash/isEmpty":234,"lodash/isFinite":236,"lodash/isNaN":240}],324:[function(_dereq_,module,exports){
+},{"lodash/isEmpty":233,"lodash/isFinite":235,"lodash/isNaN":239}],323:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'Formio',
@@ -67436,11 +67602,15 @@ module.exports = [
       onError: function($scope, $element) {
         return function(error) {
           if ((error.name === 'ValidationError') && $element) {
-            $element.find('#form-group-' + error.details[0].path).addClass('has-error');
+            var element = $element.find('#form-group-' + error.details[0].path);
+            element.addClass('has-error');
             var message = 'ValidationError: ' + error.details[0].message;
             $scope.showAlerts({
               type: 'danger',
               message: message
+            });
+            $scope.$on('formSubmit', function() {
+              element.removeClass('has-error');
             });
           }
           else {
@@ -67614,7 +67784,7 @@ module.exports = [
   }
 ];
 
-},{}],325:[function(_dereq_,module,exports){
+},{}],324:[function(_dereq_,module,exports){
 "use strict";
 var formioUtils = _dereq_('formiojs/utils');
 var conformToMask = _dereq_('vanilla-text-mask').conformToMask;
@@ -68105,7 +68275,7 @@ module.exports = function() {
   };
 };
 
-},{"formiojs/utils":63,"lodash/filter":225,"lodash/get":226,"vanilla-text-mask":270}],326:[function(_dereq_,module,exports){
+},{"formiojs/utils":63,"lodash/filter":224,"lodash/get":225,"vanilla-text-mask":269}],325:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   var generic = function(data, options) {
@@ -68232,7 +68402,7 @@ module.exports = function() {
   };
 };
 
-},{}],327:[function(_dereq_,module,exports){
+},{}],326:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   '$q',
@@ -68281,7 +68451,7 @@ module.exports = [
   }
 ];
 
-},{}],328:[function(_dereq_,module,exports){
+},{}],327:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'Formio',
@@ -68327,7 +68497,7 @@ module.exports = [
   }
 ];
 
-},{}],329:[function(_dereq_,module,exports){
+},{}],328:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'FormioUtils',
@@ -68336,7 +68506,7 @@ module.exports = [
   }
 ];
 
-},{}],330:[function(_dereq_,module,exports){
+},{}],329:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   '$sce',
@@ -68349,7 +68519,7 @@ module.exports = [
   }
 ];
 
-},{}],331:[function(_dereq_,module,exports){
+},{}],330:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
     return function(label, shortcut) {
@@ -68371,7 +68541,7 @@ module.exports = function() {
     };
   }
   
-},{}],332:[function(_dereq_,module,exports){
+},{}],331:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   function() {
@@ -68390,7 +68560,7 @@ module.exports = [
   }
 ];
 
-},{}],333:[function(_dereq_,module,exports){
+},{}],332:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'formioTableView',
@@ -68403,7 +68573,7 @@ module.exports = [
   }
 ];
 
-},{}],334:[function(_dereq_,module,exports){
+},{}],333:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   'Formio',
@@ -68418,7 +68588,7 @@ module.exports = [
   }
 ];
 
-},{}],335:[function(_dereq_,module,exports){
+},{}],334:[function(_dereq_,module,exports){
 "use strict";
 module.exports = [
   '$filter',
@@ -68475,7 +68645,7 @@ module.exports = [
   }
 ];
 
-},{}],336:[function(_dereq_,module,exports){
+},{}],335:[function(_dereq_,module,exports){
 "use strict";
 module.exports = ['$sce', function($sce) {
   return function(val) {
@@ -68483,7 +68653,7 @@ module.exports = ['$sce', function($sce) {
   };
 }];
 
-},{}],337:[function(_dereq_,module,exports){
+},{}],336:[function(_dereq_,module,exports){
 "use strict";
 _dereq_('./polyfills/polyfills');
 
@@ -68647,7 +68817,7 @@ app.run([
 
 _dereq_('./components');
 
-},{"./components":291,"./directives/customValidator":308,"./directives/formio":309,"./directives/formioBindHtml.js":310,"./directives/formioComponent":311,"./directives/formioComponentTooltip":312,"./directives/formioComponentView":313,"./directives/formioDelete":314,"./directives/formioElement":315,"./directives/formioErrors":316,"./directives/formioMask":317,"./directives/formioMax":318,"./directives/formioMin":319,"./directives/formioScriptEditor":320,"./directives/formioSubmission":321,"./directives/formioSubmissions":322,"./directives/formioWizard":323,"./factories/FormioScope":324,"./factories/FormioUtils":325,"./factories/formioInterceptor":327,"./factories/formioTableView":328,"./filters/flattenComponents":329,"./filters/safehtml":330,"./filters/shortcut":331,"./filters/tableComponents":332,"./filters/tableFieldView":333,"./filters/tableView":334,"./filters/translate":335,"./filters/trusturl":336,"./polyfills/polyfills":339,"./providers/Formio":340}],338:[function(_dereq_,module,exports){
+},{"./components":290,"./directives/customValidator":307,"./directives/formio":308,"./directives/formioBindHtml.js":309,"./directives/formioComponent":310,"./directives/formioComponentTooltip":311,"./directives/formioComponentView":312,"./directives/formioDelete":313,"./directives/formioElement":314,"./directives/formioErrors":315,"./directives/formioMask":316,"./directives/formioMax":317,"./directives/formioMin":318,"./directives/formioScriptEditor":319,"./directives/formioSubmission":320,"./directives/formioSubmissions":321,"./directives/formioWizard":322,"./factories/FormioScope":323,"./factories/FormioUtils":324,"./factories/formioInterceptor":326,"./factories/formioTableView":327,"./filters/flattenComponents":328,"./filters/safehtml":329,"./filters/shortcut":330,"./filters/tableComponents":331,"./filters/tableFieldView":332,"./filters/tableView":333,"./filters/translate":334,"./filters/trusturl":335,"./polyfills/polyfills":338,"./providers/Formio":339}],337:[function(_dereq_,module,exports){
 "use strict";
 'use strict';
 
@@ -68678,13 +68848,13 @@ if (typeof Object.assign != 'function') {
   })();
 }
 
-},{}],339:[function(_dereq_,module,exports){
+},{}],338:[function(_dereq_,module,exports){
 "use strict";
 'use strict';
 
 _dereq_('./Object.assign');
 
-},{"./Object.assign":338}],340:[function(_dereq_,module,exports){
+},{"./Object.assign":337}],339:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function() {
   // The formio class.
@@ -68754,5 +68924,5 @@ module.exports = function() {
   };
 };
 
-},{"formiojs":52}]},{},[337])(337)
+},{"formiojs":52}]},{},[336])(336)
 });

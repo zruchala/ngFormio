@@ -98,6 +98,13 @@ module.exports = [
             }
           };
 
+          $scope.deleteSubmission = function() {
+            $scope.formio.deleteSubmission()
+              .then(function() {
+                $scope.$emit('formSubmissionDelete', $scope.submission);
+              });
+          };
+
           $scope.isDisabled = function(component) {
             return $scope.readOnly || (typeof $scope.$parent.isDisabled === 'function' && $scope.$parent.isDisabled(component));
           };
@@ -271,11 +278,11 @@ module.exports = [
                   try {
                     if (valid !== true) {
                       $scope.component.customError = valid;
-                      $scope.formioForm[$scope.component.key].$setValidity('custom', false);
+                      $scope.formioForm[$scope.componentId].$setValidity('custom', false);
                       return;
                     }
 
-                    $scope.formioForm[$scope.component.key].$setValidity('custom', true);
+                    $scope.formioForm[$scope.componentId].$setValidity('custom', true);
                   }
                   catch (e) {
                     // Ignore any issues while editing the components.
